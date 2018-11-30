@@ -2,6 +2,13 @@
 name = "sheep_cli"
 version = "0.1.0"
 authors = ["Hilmar Wiegand <me@hwgnd.de>"]
+description = "Modular and lightweight spritesheet packer"
 
 [dependencies]
 sheep = { path = "../sheep" }
+image = "0.20"
+clap = "2.32"
+
+[[bin]]
+name = "sheep"
+path = "src/main.rs"

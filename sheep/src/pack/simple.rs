@@ -13,15 +13,10 @@ impl Packer for SimplePacker {
         sprites.sort_by(compare_area);
         free.push((0, 0));
 
-        for (i, sprite) in sprites.iter().enumerate() {
+        for sprite in sprites.iter() {
             // Push the sprite to the next free anchor
             let next_free = *free.first().expect("No free anchor");
-            absolute.push(SpriteAnchor::new(sprite.id, next_free));
-
-            // if we're at the last one, we can just stop here
-            if i == sprites.len() - 1 {
-                break;
-            }
+            absolute.push(SpriteAnchor::new(sprite.id, next_free, sprite.dimensions));
 
             // find new anchors
             let mut new_right = (next_free.0 + sprite.dimensions.0, next_free.1);

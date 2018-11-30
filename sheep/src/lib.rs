@@ -18,18 +18,14 @@ pub use {
 use sprite::{create_pixel_buffer, write_sprite};
 
 #[allow(dead_code)]
-pub struct SpriteSheet<F: Format> {
-    bytes: Vec<u8>,
-    stride: usize,
-    dimensions: (u32, u32),
-    data: F,
+pub struct SpriteSheet {
+    pub bytes: Vec<u8>,
+    pub stride: usize,
+    pub dimensions: (u32, u32),
+    anchors: Vec<SpriteAnchor>,
 }
 
-pub fn process<P, F>(input: Vec<InputSprite>, stride: usize) -> SpriteSheet<F>
-where
-    P: Packer,
-    F: Format,
-{
+pub fn pack<P: Packer>(input: Vec<InputSprite>, stride: usize) -> SpriteSheet {
     let sprites = input
         .into_iter()
         .enumerate()
@@ -53,8 +49,6 @@ where
             (sprite, packer_result.anchors[anchor_idx])
         }).collect::<Vec<(Sprite, SpriteAnchor)>>();
 
-    let format_result = F::encode(packer_result.dimensions, &sprites_with_anchors);
-
     let mut buffer = create_pixel_buffer(packer_result.dimensions, stride);
     for (sprite, anchor) in sprites_with_anchors {
         write_sprite(
@@ -70,6 +64,13 @@ where
         bytes: buffer,
         stride: stride,
         dimensions: packer_result.dimensions,
-        data: format_result,
+        anchors: packer_result.anchors,
     }
+}
+
+pub fn encode<F>(sprite_sheet: &SpriteSheet) -> F
+where
+    F: Format,
+{
+    F::encode(sprite_sheet.dimensions, &sprite_sheet.anchors)
 }

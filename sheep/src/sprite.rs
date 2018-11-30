@@ -38,10 +38,22 @@ impl SpriteData {
 pub struct SpriteAnchor {
     pub id: usize,
     pub position: (u32, u32),
+    pub dimensions: (u32, u32),
+}
+
+impl SpriteAnchor {
+    pub fn new(id: usize, position: (u32, u32), dimensions: (u32, u32)) -> Self {
+        SpriteAnchor {
+            id,
+            position,
+            dimensions,
+        }
+    }
 }
 
 pub fn create_pixel_buffer(dimensions: (u32, u32), stride: usize) -> Vec<u8> {
-    Vec::with_capacity((dimensions.0 as usize) * (dimensions.1 as usize) * stride)
+    let length = (dimensions.0 as usize) * (dimensions.1 as usize) * stride;
+    (0..length).map(|_| 0).collect::<Vec<u8>>()
 }
 
 pub fn write_sprite(

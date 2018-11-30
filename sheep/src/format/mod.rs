@@ -1,8 +1,8 @@
 #[cfg(feature = "amethyst")]
 pub mod amethyst;
 
-use {Sprite, SpriteAnchor};
+use SpriteAnchor;
 
 pub trait Format {
-    fn encode(dimensions: (u32, u32), sprites: &[(Sprite, SpriteAnchor)]) -> Self;
+    fn encode(dimensions: (u32, u32), sprites: &[SpriteAnchor]) -> Self;
 }

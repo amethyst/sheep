@@ -1,5 +1,5 @@
 use super::Format;
-use {Sprite, SpriteAnchor};
+use SpriteAnchor;
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 struct SpritePosition {
@@ -18,16 +18,16 @@ struct SerializedSpriteSheet {
 }
 
 impl Format for SerializedSpriteSheet {
-    fn encode(dimensions: (u32, u32), sprites: &[(Sprite, SpriteAnchor)]) -> Self {
-        let sprite_positions = sprites.iter()
-            .map(|(sprite, anchor)| SpritePosition {
-                x: anchor.position.0 as f32,
-                y: anchor.position.1 as f32,
-                width: sprite.data.dimensions.0 as f32,
-                height: sprite.data.dimensions.1 as f32,
+    fn encode(dimensions: (u32, u32), sprites: &[SpriteAnchor]) -> Self {
+        let sprite_positions = sprites
+            .iter()
+            .map(|it| SpritePosition {
+                x: it.position.0 as f32,
+                y: it.position.1 as f32,
+                width: it.dimensions.0 as f32,
+                height: it.dimensions.1 as f32,
                 offsets: None,
-            })
-            .collect::<Vec<SpritePosition>>();
+            }).collect::<Vec<SpritePosition>>();
 
         SerializedSpriteSheet {
             spritesheet_width: dimensions.0 as f32,
