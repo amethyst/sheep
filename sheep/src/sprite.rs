@@ -9,6 +9,12 @@ pub struct SpriteData {
     pub dimensions: (u32, u32),
 }
 
+impl SpriteData {
+    pub fn new(id: usize, dimensions: (u32, u32)) -> Self {
+        SpriteData { id, dimensions }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct SpriteAnchor {
     pub id: usize,

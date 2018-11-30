@@ -25,7 +25,6 @@ impl Packer for SimplePacker {
 
             // find new anchors
             let mut new_right = (next_free.0 + sprite.dimensions.0, next_free.1);
-
             let mut new_bottom = (next_free.0, next_free.1 + sprite.dimensions.1);
 
             // still finding new anchors
@@ -47,31 +46,31 @@ impl Packer for SimplePacker {
                     free.remove(i);
                     continue;
                 }
-
-                // remove first, push new anchors
-                free.remove(0);
-
-                if !free.contains(&new_right) {
-                    free.push(new_right);
-                }
-
-                if !free.contains(&new_bottom) {
-                    free.push(new_bottom);
-                }
-
-                free.sort_by(compare_pos);
             }
+
+            // remove first, push new anchors
+            free.remove(0);
+
+            if !free.contains(&new_right) {
+                free.push(new_right);
+            }
+
+            if !free.contains(&new_bottom) {
+                free.push(new_bottom);
+            }
+
+            free.sort_by(compare_pos);
         }
 
         let width = free
             .iter()
-            .max_by(|a, b| b.0.cmp(&a.0))
+            .max_by(|a, b| a.0.cmp(&b.0))
             .expect("Invalid: No free anchors")
             .0;
 
         let height = free
             .iter()
-            .max_by(|a, b| b.1.cmp(&a.1))
+            .max_by(|a, b| a.1.cmp(&b.1))
             .expect("Invalid: No free anchors")
             .1;
 
@@ -88,4 +87,21 @@ fn compare_area(a: &SpriteData, b: &SpriteData) -> Ordering {
 
 fn compare_pos(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     (a.0.pow(4) + a.1.pow(4)).cmp(&(b.0.pow(4) + b.1.pow(4)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pack_square() {
+        let sprites = (0..16)
+            .map(|i| SpriteData::new(i, (20, 20)))
+            .collect::<Vec<SpriteData>>();
+
+        let result = SimplePacker::pack(&sprites);
+
+        assert_eq!(result.dimensions.0, 20 * 4);
+        assert_eq!(result.dimensions.1, 20 * 4);
+    }
 }
