@@ -1,3 +1,10 @@
+#[cfg(feature = "amethyst")]
+extern crate serde;
+
+#[cfg(feature = "amethyst")]
+#[macro_use]
+extern crate serde_derive;
+
 mod format;
 mod pack;
 mod sprite;
@@ -35,9 +42,7 @@ where
         .collect::<Vec<SpriteData>>();
 
     let packer_result = P::pack(&sprite_data);
-    let format_result = F::encode(packer_result.dimensions, &packer_result.anchors);
-
-    let to_write = sprites
+    let sprites_with_anchors = sprites
         .into_iter()
         .map(|sprite| {
             let anchor_idx = packer_result
@@ -48,8 +53,10 @@ where
             (sprite, packer_result.anchors[anchor_idx])
         }).collect::<Vec<(Sprite, SpriteAnchor)>>();
 
+    let format_result = F::encode(packer_result.dimensions, &sprites_with_anchors);
+
     let mut buffer = create_pixel_buffer(packer_result.dimensions, stride);
-    for (sprite, anchor) in to_write {
+    for (sprite, anchor) in sprites_with_anchors {
         write_sprite(
             &mut buffer,
             packer_result.dimensions,

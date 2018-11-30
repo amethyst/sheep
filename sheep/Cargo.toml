@@ -2,3 +2,11 @@
 name = "sheep"
 version = "0.1.0"
 authors = ["Hilmar Wiegand <me@hwgnd.de>"]
+
+[features]
+default = ["amethyst"]
+amethyst = ["serde", "serde_derive"]
+
+[dependencies]
+serde = { version = "1", optional = true }
+serde_derive = { version = "1", optional = true }
