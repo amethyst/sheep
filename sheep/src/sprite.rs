@@ -1,6 +1,25 @@
+#[derive(Clone)]
+pub struct InputSprite {
+    pub bytes: Vec<u8>,
+    pub dimensions: (u32, u32),
+}
+
 #[derive(Debug, Clone)]
 pub struct Sprite {
-    data: SpriteData,
+    pub bytes: Vec<u8>,
+    pub data: SpriteData,
+}
+
+impl Sprite {
+    pub fn from_input(index: usize, input: InputSprite) -> Sprite {
+        Sprite {
+            bytes: input.bytes,
+            data: SpriteData {
+                id: index,
+                dimensions: input.dimensions,
+            },
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

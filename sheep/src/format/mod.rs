@@ -1,5 +1,7 @@
 pub mod amethyst;
 
-pub trait Formatter {
-    fn write() -> String;
+use SpriteAnchor;
+
+pub trait Format {
+    fn encode(dimensions: (u32, u32), anchors: &[SpriteAnchor]) -> Self;
 }
