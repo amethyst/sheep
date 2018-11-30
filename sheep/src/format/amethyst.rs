@@ -1,8 +1,10 @@
 use super::Format;
 use SpriteAnchor;
 
+pub struct AmethystFormat;
+
 #[derive(Clone, Debug, PartialEq, Serialize)]
-struct SpritePosition {
+pub struct SpritePosition {
     pub x: f32,
     pub y: f32,
     pub width: f32,
@@ -11,14 +13,16 @@ struct SpritePosition {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
-struct SerializedSpriteSheet {
+pub struct SerializedSpriteSheet {
     pub spritesheet_width: f32,
     pub spritesheet_height: f32,
     pub sprites: Vec<SpritePosition>,
 }
 
-impl Format for SerializedSpriteSheet {
-    fn encode(dimensions: (u32, u32), sprites: &[SpriteAnchor]) -> Self {
+impl Format for AmethystFormat {
+    type Data = SerializedSpriteSheet;
+
+    fn encode(dimensions: (u32, u32), sprites: &[SpriteAnchor]) -> Self::Data {
         let sprite_positions = sprites
             .iter()
             .map(|it| SpritePosition {

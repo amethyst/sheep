@@ -1,9 +1,11 @@
 extern crate clap;
 extern crate image;
+extern crate ron;
 extern crate sheep;
 
 use clap::{App, AppSettings, Arg, SubCommand};
-use sheep::{InputSprite, SimplePacker};
+use sheep::{AmethystFormat, InputSprite, SimplePacker};
+use std::{fs::File, io::prelude::*};
 
 fn main() {
     let app = App::new("sheep")
@@ -65,6 +67,7 @@ fn do_pack(input: Vec<String>, output_path: &str) {
     // NOTE(happenslol): By default, we're using rgba8 right now,
     // so the stride is always 4
     let sprite_sheet = sheep::pack::<SimplePacker>(sprites, 4);
+    let meta = sheep::encode::<AmethystFormat>(&sprite_sheet);
 
     let outbuf = image::RgbaImage::from_vec(
         sprite_sheet.dimensions.0,
@@ -75,4 +78,13 @@ fn do_pack(input: Vec<String>, output_path: &str) {
     outbuf
         .save(format!("{}.png", output_path))
         .expect("Failed to save image");
+
+    let mut meta_file =
+        File::create(format!("{}.ron", output_path)).expect("Failed to create meta file");
+
+    let meta_str = ron::ser::to_string(&meta).expect("Failed to encode meta file");
+
+    meta_file
+        .write_all(meta_str.as_bytes())
+        .expect("Failed to write meta file");
 }

@@ -15,6 +15,9 @@ pub use {
     sprite::{InputSprite, Sprite, SpriteAnchor, SpriteData},
 };
 
+#[cfg(feature = "amethyst")]
+pub use format::amethyst::{AmethystFormat, SerializedSpriteSheet, SpritePosition};
+
 use sprite::{create_pixel_buffer, write_sprite};
 
 #[allow(dead_code)]
@@ -68,7 +71,7 @@ pub fn pack<P: Packer>(input: Vec<InputSprite>, stride: usize) -> SpriteSheet {
     }
 }
 
-pub fn encode<F>(sprite_sheet: &SpriteSheet) -> F
+pub fn encode<F>(sprite_sheet: &SpriteSheet) -> F::Data
 where
     F: Format,
 {
