@@ -60,7 +60,7 @@ pub fn write_sprite(
         for x in 0..sprite.data.dimensions.0 {
             let sprite_x = x * stride;
             let buffer_x = (x + anchor.position.0) * stride;
-            
+
             for i in 0..stride {
                 let sprite_idx = (sprite_y + sprite_x + i) as usize;
                 let buffer_idx = (buffer_y + buffer_x + i) as usize;
