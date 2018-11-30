@@ -39,3 +39,34 @@ pub struct SpriteAnchor {
     pub id: usize,
     pub position: (u32, u32),
 }
+
+pub fn create_pixel_buffer(dimensions: (u32, u32), stride: usize) -> Vec<u8> {
+    Vec::with_capacity((dimensions.0 as usize) * (dimensions.1 as usize) * stride)
+}
+
+pub fn write_sprite(
+    buffer: &mut Vec<u8>,
+    dimensions: (u32, u32),
+    stride: usize,
+    sprite: &Sprite,
+    anchor: &SpriteAnchor,
+) {
+    let stride = stride as u32;
+
+    for y in 0..sprite.data.dimensions.1 {
+        let sprite_y = y * sprite.data.dimensions.0 * stride;
+        let buffer_y = (y + anchor.position.1) * dimensions.0 * stride;
+
+        for x in 0..sprite.data.dimensions.0 {
+            let sprite_x = x * stride;
+            let buffer_x = (x + anchor.position.0) * stride;
+            
+            for i in 0..stride {
+                let sprite_idx = (sprite_y + sprite_x + i) as usize;
+                let buffer_idx = (buffer_y + buffer_x + i) as usize;
+
+                buffer[buffer_idx] = sprite.bytes[sprite_idx];
+            }
+        }
+    }
+}

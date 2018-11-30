@@ -8,12 +8,17 @@ pub use {
     sprite::{InputSprite, Sprite, SpriteAnchor, SpriteData},
 };
 
+use sprite::{create_pixel_buffer, write_sprite};
+
+#[allow(dead_code)]
 pub struct SpriteSheet<F: Format> {
-    _dimensions: (u32, u32),
-    _data: F,
+    bytes: Vec<u8>,
+    stride: usize,
+    dimensions: (u32, u32),
+    data: F,
 }
 
-pub fn process<P, F>(input: Vec<InputSprite>) -> SpriteSheet<F>
+pub fn process<P, F>(input: Vec<InputSprite>, stride: usize) -> SpriteSheet<F>
 where
     P: Packer,
     F: Format,
@@ -32,8 +37,27 @@ where
     let packer_result = P::pack(&sprite_data);
     let format_result = F::encode(packer_result.dimensions, &packer_result.anchors);
 
+    let to_write = sprites
+        .into_iter()
+        .map(|sprite| {
+            let anchor_idx = packer_result.anchors
+                .binary_search_by_key(&sprite.data.id, |it| it.id)
+                .expect("Should have found anchor for sprite");
+
+            (sprite, packer_result.anchors[anchor_idx])
+        })
+        .collect::<Vec<(Sprite, SpriteAnchor)>>();
+
+
+    let mut buffer = create_pixel_buffer(packer_result.dimensions, stride);
+    for (sprite, anchor) in to_write {
+        write_sprite(&mut buffer, packer_result.dimensions, stride, &sprite, &anchor);
+    }
+
     SpriteSheet {
-        _dimensions: packer_result.dimensions,
-        _data: format_result,
+        bytes: buffer,
+        stride: stride,
+        dimensions: packer_result.dimensions,
+        data: format_result,
     }
 }
