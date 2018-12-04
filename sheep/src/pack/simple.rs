@@ -81,6 +81,12 @@ fn compare_area(a: &SpriteData, b: &SpriteData) -> Ordering {
 }
 
 fn compare_pos(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
+    // NOTE(happenslol): We might overflow here quickly if the output
+    // sprite becomes too big, so we use u64s. This is why this algorithm
+    // doesn't scale very well...
+    let a = (a.0 as u64, a.1 as u64);
+    let b = (b.0 as u64, b.1 as u64);
+
     (a.0.pow(4) + a.1.pow(4)).cmp(&(b.0.pow(4) + b.1.pow(4)))
 }
 

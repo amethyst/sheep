@@ -343,6 +343,8 @@ dependencies = [
 name = "sheep"
 version = "0.1.0"
 dependencies = [
+ "image 0.20.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ron 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.80 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.80 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

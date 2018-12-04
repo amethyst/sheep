@@ -10,3 +10,11 @@ amethyst = ["serde", "serde_derive"]
 [dependencies]
 serde = { version = "1", optional = true }
 serde_derive = { version = "1", optional = true }
+
+[dev-dependencies]
+image = "0.20"
+ron = "0.4"
+
+[[example]]
+name = "simple_pack"
+path = "examples/simple_pack/main.rs"
