@@ -6,7 +6,7 @@ The project is in heavy development and the API might change a few times until w
 
 ## Usage
 
-To use the CLI, simple use `cargo run -- ...`. For an example on how to use the library, please see the `simple_pack` example in the `sheep/examples` directory.
+To use the CLI, simple use `cargo run -- ...`, usage hints are provided. For an example on how to use the library, please see the `simple_pack` example in the `sheep/examples` directory.
 
 ## Implementing your own `Packer` and `Format`
 
