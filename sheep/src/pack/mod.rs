@@ -1,3 +1,4 @@
+pub mod maxrects;
 pub mod simple;
 
 use {SpriteAnchor, SpriteData};
