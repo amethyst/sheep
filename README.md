@@ -1,6 +1,6 @@
 # Sheep
 
-`sheep` (Sprite**sheet** **packer**) is a lightweight and modular library used to create spritesheets. It aims to impose as little restrictions as possible on the usage of its API so that it can be used in asset pipelines.
+`sheep` (Sprite**shee**t **p**acker) is a lightweight and modular library used to create spritesheets. It aims to impose as little restrictions as possible on the usage of its API so that it can be used in asset pipelines.
 
 The project is in heavy development and the API might change a few times until we reach a stable version, but the general flow of inputting bytes and receiving metadata and a byte vec will remain the same.
 
