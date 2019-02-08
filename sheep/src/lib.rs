@@ -46,11 +46,14 @@ pub fn pack<P: Packer>(input: Vec<InputSprite>, stride: usize) -> SpriteSheet {
         .map(|sprite| {
             let anchor_idx = packer_result
                 .anchors
-                .binary_search_by_key(&sprite.data.id, |it| it.id)
+                .iter()
+                .find(|it| it.id == sprite.data.id)
+                .map(|it| it.id)
                 .expect("Should have found anchor for sprite");
 
             (sprite, packer_result.anchors[anchor_idx])
-        }).collect::<Vec<(Sprite, SpriteAnchor)>>();
+        })
+        .collect::<Vec<(Sprite, SpriteAnchor)>>();
 
     let mut buffer = create_pixel_buffer(packer_result.dimensions, stride);
     for (sprite, anchor) in sprites_with_anchors {
