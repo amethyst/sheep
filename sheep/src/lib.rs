@@ -41,22 +41,13 @@ pub fn pack<P: Packer>(input: Vec<InputSprite>, stride: usize) -> SpriteSheet {
         .collect::<Vec<SpriteData>>();
 
     let packer_result = P::pack(&sprite_data);
-    let sprites_with_anchors = sprites
-        .into_iter()
-        .map(|sprite| {
-            let anchor_idx = packer_result
-                .anchors
-                .iter()
-                .find(|it| it.id == sprite.data.id)
-                .map(|it| it.id)
-                .expect("Should have found anchor for sprite");
-
-            (sprite, packer_result.anchors[anchor_idx])
-        })
-        .collect::<Vec<(Sprite, SpriteAnchor)>>();
-
     let mut buffer = create_pixel_buffer(packer_result.dimensions, stride);
-    for (sprite, anchor) in sprites_with_anchors {
+    sprites.into_iter().for_each(|sprite| {
+        let anchor = packer_result
+            .anchors
+            .iter()
+            .find(|it| it.id == sprite.data.id)
+            .expect("Should have found anchor for sprite");
         write_sprite(
             &mut buffer,
             packer_result.dimensions,
@@ -64,7 +55,7 @@ pub fn pack<P: Packer>(input: Vec<InputSprite>, stride: usize) -> SpriteSheet {
             &sprite,
             &anchor,
         );
-    }
+    });
 
     SpriteSheet {
         bytes: buffer,
