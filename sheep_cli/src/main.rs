@@ -1,11 +1,18 @@
 extern crate clap;
 extern crate image;
 extern crate ron;
+extern crate serde;
 extern crate sheep;
 
 use clap::{App, AppSettings, Arg, SubCommand};
-use sheep::{AmethystFormat, InputSprite, SimplePacker};
+use image::RgbaImage;
+use serde::Serialize;
+use sheep::{AmethystFormat, AmethystNamedFormat, Format, InputSprite, SimplePacker};
+use std::str::FromStr;
 use std::{fs::File, io::prelude::*};
+
+const DEFAULT_FORMAT: &'static str = "amethyst";
+const AVAILABLE_FORMATS: [&str; 2] = ["amethyst", "amethyst_named"];
 
 fn main() {
     let app = App::new("sheep")
@@ -15,7 +22,7 @@ fn main() {
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("pack")
-                .help("Packs supplied images into a spritesheet")
+                .about("Packs supplied images into a spritesheet")
                 .arg(Arg::with_name("INPUT").required(true).multiple(true))
                 .arg(
                     Arg::with_name("output")
@@ -25,6 +32,15 @@ fn main() {
                         .takes_value(true)
                         .required(false)
                         .default_value("out"),
+                )
+                .arg(
+                    Arg::with_name("format")
+                        .help("Determines the fields present in the serialized output.")
+                        .possible_values(&AVAILABLE_FORMATS)
+                        .short("f")
+                        .long("format")
+                        .takes_value(true)
+                        .default_value(DEFAULT_FORMAT),
                 ),
         );
 
@@ -41,13 +57,45 @@ fn main() {
                 .value_of("output")
                 .expect("Unreachable: param has default value");
 
-            do_pack(input, out);
+            match matches.value_of("format") {
+                Some("amethyst_named") => {
+                    let names = input
+                        .iter()
+                        .map(|path| {
+                            std::path::PathBuf::from(&path)
+                                .file_stem()
+                                .and_then(|name| name.to_str())
+                                .map(|name| {
+                                    String::from_str(name)
+                                        .expect("could not parse string from file name")
+                                })
+                                .expect("Failed to extract file name")
+                        })
+                        .collect();
+
+                    do_pack::<AmethystNamedFormat>(input, names)
+                        .map(|(output_image, meta)| write_files(out, output_image, meta))
+                        .expect("Failed to pack sprites")
+                }
+                Some(DEFAULT_FORMAT) => do_pack::<AmethystFormat>(input, ())
+                    .map(|(output_image, meta)| write_files(out, output_image, meta))
+                    .expect("Failed to pack sprites"),
+                _ => {
+                    panic!("Unknown format");
+                }
+            };
         }
         _ => {}
     }
 }
 
-fn do_pack(input: Vec<String>, output_path: &str) {
+fn do_pack<F>(
+    input: Vec<String>,
+    options: F::Options,
+) -> Result<(image::RgbaImage, F::Data), &'static str>
+where
+    F: Format,
+{
     let mut sprites = Vec::new();
 
     for path in input {
@@ -67,14 +115,20 @@ fn do_pack(input: Vec<String>, output_path: &str) {
     // NOTE(happenslol): By default, we're using rgba8 right now,
     // so the stride is always 4
     let sprite_sheet = sheep::pack::<SimplePacker>(sprites, 4);
-    let meta = sheep::encode::<AmethystFormat>(&sprite_sheet);
 
-    let outbuf = image::RgbaImage::from_vec(
+    let meta = sheep::encode::<F>(&sprite_sheet, options);
+
+    let outbuf = RgbaImage::from_vec(
         sprite_sheet.dimensions.0,
         sprite_sheet.dimensions.1,
         sprite_sheet.bytes,
-    ).expect("Failed to construct image from sprite sheet bytes");
+    )
+    .ok_or("Failed to construct image from sprite sheet bytes")?;
 
+    return Ok((outbuf, meta));
+}
+
+fn write_files<S: Serialize>(output_path: &str, outbuf: RgbaImage, meta: S) {
     outbuf
         .save(format!("{}.png", output_path))
         .expect("Failed to save image");
