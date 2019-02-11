@@ -11,6 +11,7 @@ impl Packer for SimplePacker {
         let mut absolute = Vec::new();
 
         sprites.sort_by(compare_area);
+        sprites.reverse();
         free.push((0, 0));
 
         for sprite in sprites.iter() {
