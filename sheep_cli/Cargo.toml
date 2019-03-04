@@ -5,6 +5,7 @@ authors = ["Hilmar Wiegand <me@hwgnd.de>"]
 description = "Modular and lightweight spritesheet packer"
 
 [dependencies]
+serde = "1.0.89"
 sheep = { path = "../sheep" }
 image = "0.20"
 clap = "2.32"

@@ -21,8 +21,13 @@ pub struct SerializedSpriteSheet {
 
 impl Format for AmethystFormat {
     type Data = SerializedSpriteSheet;
+    type Options = ();
 
-    fn encode(dimensions: (u32, u32), sprites: &[SpriteAnchor]) -> Self::Data {
+    fn encode(
+        dimensions: (u32, u32),
+        sprites: &[SpriteAnchor],
+        _options: Self::Options,
+    ) -> Self::Data {
         let sprite_positions = sprites
             .iter()
             .map(|it| SpritePosition {
@@ -31,7 +36,8 @@ impl Format for AmethystFormat {
                 width: it.dimensions.0 as f32,
                 height: it.dimensions.1 as f32,
                 offsets: None,
-            }).collect::<Vec<SpritePosition>>();
+            })
+            .collect::<Vec<SpritePosition>>();
 
         SerializedSpriteSheet {
             spritesheet_width: dimensions.0 as f32,
