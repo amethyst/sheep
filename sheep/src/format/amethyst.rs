@@ -40,8 +40,8 @@ impl Format for AmethystFormat {
             .collect::<Vec<SpritePosition>>();
 
         SerializedSpriteSheet {
-            spritesheet_width: dimensions.0 as f32,
-            spritesheet_height: dimensions.1 as f32,
+            texture_width: dimensions.0 as f32,
+            texture_height: dimensions.1 as f32,
             sprites: sprite_positions,
         }
     }
