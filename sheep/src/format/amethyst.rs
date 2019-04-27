@@ -14,8 +14,8 @@ pub struct SpritePosition {
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct SerializedSpriteSheet {
-    pub spritesheet_width: f32,
-    pub spritesheet_height: f32,
+    pub texture_width: f32,
+    pub texture_height: f32,
     pub sprites: Vec<SpritePosition>,
 }
 

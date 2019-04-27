@@ -33,8 +33,8 @@ impl From<(&SpriteAnchor, String)> for NamedSpritePosition {
 /// instead of `SpriteAnchor`s
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct SerializedNamedSpriteSheet {
-    spritesheet_width: f32,
-    spritesheet_height: f32,
+    texture_width: f32,
+    texture_height: f32,
     sprites: Vec<NamedSpritePosition>,
 }
 
