@@ -14,8 +14,8 @@ pub struct SpritePosition {
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct SerializedSpriteSheet {
-    pub spritesheet_width: f32,
-    pub spritesheet_height: f32,
+    pub texture_width: f32,
+    pub texture_height: f32,
     pub sprites: Vec<SpritePosition>,
 }
 
@@ -40,8 +40,8 @@ impl Format for AmethystFormat {
             .collect::<Vec<SpritePosition>>();
 
         SerializedSpriteSheet {
-            spritesheet_width: dimensions.0 as f32,
-            spritesheet_height: dimensions.1 as f32,
+            texture_width: dimensions.0 as f32,
+            texture_height: dimensions.1 as f32,
             sprites: sprite_positions,
         }
     }
