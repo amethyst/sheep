@@ -100,7 +100,15 @@ where
 
     for path in input {
         let img = image::open(&path).expect("Failed to open image");
-        let img = img.as_rgba8().expect("Failed to convert image to rgba8");
+        let img_owned;
+        let img = {
+            if let Some(img) = img.as_rgba8() {
+                img
+            } else {
+                img_owned = img.to_rgba();
+                &img_owned
+            }
+        };
 
         let dimensions = img.dimensions();
         let bytes = img
