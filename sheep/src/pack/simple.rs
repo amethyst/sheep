@@ -70,6 +70,10 @@ impl Packer for SimplePacker {
             .expect("Invalid: No free anchors")
             .1;
 
+        // Finally sort the anchors so that they are in the same order as the
+        // input sprites
+        absolute.sort_by_key(|s| s.id);
+
         PackerResult {
             dimensions: (width, height),
             anchors: absolute,
