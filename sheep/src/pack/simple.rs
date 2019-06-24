@@ -11,6 +11,7 @@ impl Packer for SimplePacker {
         let mut absolute = Vec::new();
 
         sprites.sort_by(compare_area);
+        sprites.reverse();
         free.push((0, 0));
 
         for sprite in sprites.iter() {
@@ -68,6 +69,10 @@ impl Packer for SimplePacker {
             .max_by(|a, b| a.1.cmp(&b.1))
             .expect("Invalid: No free anchors")
             .1;
+
+        // Finally sort the anchors so that they are in the same order as the
+        // input sprites
+        absolute.sort_by_key(|s| s.id);
 
         PackerResult {
             dimensions: (width, height),

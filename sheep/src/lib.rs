@@ -17,6 +17,7 @@ pub use {
 
 #[cfg(feature = "amethyst")]
 pub use format::amethyst::{AmethystFormat, SerializedSpriteSheet, SpritePosition};
+pub use format::named::AmethystNamedFormat;
 
 use sprite::{create_pixel_buffer, write_sprite};
 
@@ -41,19 +42,13 @@ pub fn pack<P: Packer>(input: Vec<InputSprite>, stride: usize) -> SpriteSheet {
         .collect::<Vec<SpriteData>>();
 
     let packer_result = P::pack(&sprite_data);
-    let sprites_with_anchors = sprites
-        .into_iter()
-        .map(|sprite| {
-            let anchor_idx = packer_result
-                .anchors
-                .binary_search_by_key(&sprite.data.id, |it| it.id)
-                .expect("Should have found anchor for sprite");
-
-            (sprite, packer_result.anchors[anchor_idx])
-        }).collect::<Vec<(Sprite, SpriteAnchor)>>();
-
     let mut buffer = create_pixel_buffer(packer_result.dimensions, stride);
-    for (sprite, anchor) in sprites_with_anchors {
+    sprites.into_iter().for_each(|sprite| {
+        let anchor = packer_result
+            .anchors
+            .iter()
+            .find(|it| it.id == sprite.data.id)
+            .expect("Should have found anchor for sprite");
         write_sprite(
             &mut buffer,
             packer_result.dimensions,
@@ -61,7 +56,7 @@ pub fn pack<P: Packer>(input: Vec<InputSprite>, stride: usize) -> SpriteSheet {
             &sprite,
             &anchor,
         );
-    }
+    });
 
     SpriteSheet {
         bytes: buffer,
@@ -71,9 +66,9 @@ pub fn pack<P: Packer>(input: Vec<InputSprite>, stride: usize) -> SpriteSheet {
     }
 }
 
-pub fn encode<F>(sprite_sheet: &SpriteSheet) -> F::Data
+pub fn encode<F>(sprite_sheet: &SpriteSheet, options: F::Options) -> F::Data
 where
     F: Format,
 {
-    F::encode(sprite_sheet.dimensions, &sprite_sheet.anchors)
+    F::encode(sprite_sheet.dimensions, &sprite_sheet.anchors, options)
 }
