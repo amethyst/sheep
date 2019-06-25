@@ -27,11 +27,19 @@ fn main() {
 
     // Do the actual packing! 4 defines the stride, since we're using rgba8 we
     // have 4 bytes per pixel.
-    let sprite_sheet = sheep::pack::<SimplePacker>(sprites, 4);
+    let results = sheep::pack::<SimplePacker>(sprites, 4, ());
+
+    // SimplePacker always returns a single result. Other packers can return
+    // multiple sheets; should they, for example, choose to enforce a maximum
+    // texture size per sheet.
+    let sprite_sheet = results
+        .into_iter()
+        .next()
+        .expect("Should have returned a spritesheet");
 
     // Now, we can encode the sprite sheet in a format of our choosing to
     // save things such as offsets, positions of the sprites and so on.
-    let meta = sheep::encode::<AmethystFormat>(&sprite_sheet);
+    let meta = sheep::encode::<AmethystFormat>(&sprite_sheet, ());
 
     // Next, we save the output to a file using the image crate again.
     let outbuf = image::RgbaImage::from_vec(

@@ -122,7 +122,13 @@ where
 
     // NOTE(happenslol): By default, we're using rgba8 right now,
     // so the stride is always 4
-    let sprite_sheet = sheep::pack::<SimplePacker>(sprites, 4);
+    let results = sheep::pack::<SimplePacker>(sprites, 4, ());
+
+    // NOTE(happenslol): SimplePacker always outputs 1 sheet.
+    let sprite_sheet = results
+        .into_iter()
+        .next()
+        .expect("Should have returned a spritesheet");
 
     let meta = sheep::encode::<F>(&sprite_sheet, options);
 

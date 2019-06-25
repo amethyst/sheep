@@ -2,12 +2,16 @@ use {Packer, PackerResult, SpriteAnchor, SpriteData};
 
 pub struct MaxrectsPacker;
 
+pub struct MaxrectsOptions;
+
 impl Packer for MaxrectsPacker {
-    fn pack(sprites: &[SpriteData]) -> PackerResult {
-        PackerResult {
+    type Options = MaxrectsOptions;
+
+    fn pack(sprites: &[SpriteData], options: MaxrectsOptions) -> Vec<PackerResult> {
+        vec![PackerResult {
             dimensions: (0, 0),
             anchors: Vec::new(),
-        }
+        }]
     }
 }
 
