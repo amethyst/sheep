@@ -63,7 +63,10 @@ impl Packer for MaxrectsPacker {
         }
 
         bins.extend(oversized.into_iter());
-        let result = bins.into_iter().map(|bin| bin.to_result()).collect::<Vec<PackerResult>>();
+        let result = bins
+            .into_iter()
+            .map(|bin| bin.to_result())
+            .collect::<Vec<PackerResult>>();
 
         result
     }
@@ -150,7 +153,8 @@ impl MaxRectsBin {
     }
 
     pub fn to_result(&self) -> PackerResult {
-        let anchors = self.used
+        let anchors = self
+            .used
             .iter()
             .map(|(rect, id)| SpriteAnchor {
                 id: *id,
@@ -159,24 +163,17 @@ impl MaxRectsBin {
             })
             .collect::<Vec<SpriteAnchor>>();
 
-        let null_anchor = SpriteAnchor { id: 0, position: (0, 0), dimensions: (0, 0) };
+        let w = anchors
+            .iter()
+            .map(|a| a.position.0 + a.dimensions.0)
+            .max()
+            .unwrap_or(0);
 
-        let (w, h) = {
-            let max_x = anchors
-                .iter()
-                .max_by_key(|a| a.position.0)
-                .unwrap_or(&null_anchor);
-
-            let max_y = anchors
-                .iter()
-                .max_by_key(|a| a.position.1)
-                .unwrap_or(&null_anchor);
-
-            let w = max_x.position.0 + max_x.dimensions.0;
-            let h = max_y.position.1 + max_y.dimensions.1;
-
-            (w, h)
-        };
+        let h = anchors
+            .iter()
+            .map(|a| a.position.1 + a.dimensions.1)
+            .max()
+            .unwrap_or(0);
 
         PackerResult {
             dimensions: (w, h),
@@ -357,13 +354,74 @@ fn remove_redundant_rects(rects: &mut Vec<Rect>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test::{self, Bencher};
 
     #[test]
     fn pack_regular() {
-        let sprites = (0..10_000)
+        let mut sprites = (0..10)
+            .map(|i| SpriteData::new(i, (10, 10)))
+            .collect::<Vec<SpriteData>>();
+
+        let options = MaxrectsOptions::default()
+            .preferred_width(10 * 10)
+            .preferred_height(10 * 10);
+
+        let result = MaxrectsPacker::pack(&sprites, options);
+        let first = result.iter().next().expect("should have 1 result");
+
+        assert_eq!(result.len(), 1);
+
+        // They'll all be packed into 1 row in this example, so they output
+        // will be shrunk to fit the entire width plus 1 row.
+        assert_eq!(first.dimensions.0, 10 * 10);
+        assert_eq!(first.dimensions.1, 10);
+
+        sprites.push(SpriteData::new(11, (10, 20)));
+        let result = MaxrectsPacker::pack(&sprites, options);
+        let first = result.iter().next().expect("should have 1 result");
+
+        assert_eq!(first.dimensions.0, 10 * 10);
+        assert_eq!(first.dimensions.1, 20);
+    }
+
+    #[test]
+    fn pack_oversized() {
+        let oversized = (0..1000)
             .map(|i| SpriteData::new(i, (100, 100)))
             .collect::<Vec<SpriteData>>();
 
-        let result = MaxrectsPacker::pack(&sprites, Default::default());
+        let options = MaxrectsOptions::default()
+            .preferred_width(50)
+            .preferred_height(50);
+
+        let result = MaxrectsPacker::pack(&oversized, options);
+
+        assert_eq!(result.len(), oversized.len());
+        for bin in result {
+            assert_eq!(bin.dimensions.0, 100);
+            assert_eq!(bin.dimensions.1, 100);
+        }
+    }
+
+    #[bench]
+    fn bench_pack(b: &mut Bencher) {
+        let mut sprites = (0..1000)
+            .map(|i| SpriteData::new(i, (100, 100)))
+            .collect::<Vec<SpriteData>>();
+
+        let smaller_sprites = (0..1000)
+            .map(|i| SpriteData::new(i, (80, 80)))
+            .collect::<Vec<SpriteData>>();
+
+        sprites.extend(smaller_sprites.into_iter());
+
+        let options = MaxrectsOptions::default()
+            .preferred_width(1000 * 100)
+            .preferred_height(1000 * 100);
+
+        b.iter(|| {
+            let result = MaxrectsPacker::pack(&sprites, options);
+            let _ = test::black_box(&result);
+        });
     }
 }

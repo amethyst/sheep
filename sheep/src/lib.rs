@@ -1,3 +1,6 @@
+#![feature(test)]
+extern crate test;
+
 #[cfg(feature = "amethyst")]
 extern crate serde;
 
@@ -12,9 +15,9 @@ mod sprite;
 pub use {
     format::Format,
     pack::{
-        Packer, PackerResult,
+        maxrects::{MaxrectsOptions, MaxrectsPacker},
         simple::SimplePacker,
-        maxrects::{MaxrectsPacker, MaxrectsOptions},
+        Packer, PackerResult,
     },
     sprite::{InputSprite, Sprite, SpriteAnchor, SpriteData},
 };
