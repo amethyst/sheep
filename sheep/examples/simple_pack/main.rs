@@ -27,7 +27,7 @@ fn main() {
 
     // Do the actual packing! 4 defines the stride, since we're using rgba8 we
     // have 4 bytes per pixel.
-    let results = sheep::pack::<SimplePacker>(sprites, 4, ());
+    let results = sheep::pack::<SimplePacker>(sprites, 4, Default::default());
 
     // SimplePacker always returns a single result. Other packers can return
     // multiple sheets; should they, for example, choose to enforce a maximum

@@ -11,7 +11,11 @@ mod sprite;
 
 pub use {
     format::Format,
-    pack::{simple::SimplePacker, Packer, PackerResult},
+    pack::{
+        Packer, PackerResult,
+        simple::SimplePacker,
+        maxrects::{MaxrectsPacker, MaxrectsOptions},
+    },
     sprite::{InputSprite, Sprite, SpriteAnchor, SpriteData},
 };
 
@@ -21,7 +25,7 @@ pub use format::named::AmethystNamedFormat;
 
 use sprite::{create_pixel_buffer, write_sprite};
 
-#[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub struct SpriteSheet {
     pub bytes: Vec<u8>,
     pub stride: usize,

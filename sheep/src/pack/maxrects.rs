@@ -62,10 +62,10 @@ impl Packer for MaxrectsPacker {
             bins.push(bin);
         }
 
-        vec![PackerResult {
-            dimensions: (0, 0),
-            anchors: Vec::new(),
-        }]
+        bins.extend(oversized.into_iter());
+        let result = bins.into_iter().map(|bin| bin.to_result()).collect::<Vec<PackerResult>>();
+
+        result
     }
 }
 
@@ -149,6 +149,41 @@ impl MaxRectsBin {
         }
     }
 
+    pub fn to_result(&self) -> PackerResult {
+        let anchors = self.used
+            .iter()
+            .map(|(rect, id)| SpriteAnchor {
+                id: *id,
+                position: (rect.x, rect.y),
+                dimensions: (rect.width, rect.height),
+            })
+            .collect::<Vec<SpriteAnchor>>();
+
+        let null_anchor = SpriteAnchor { id: 0, position: (0, 0), dimensions: (0, 0) };
+
+        let (w, h) = {
+            let max_x = anchors
+                .iter()
+                .max_by_key(|a| a.position.0)
+                .unwrap_or(&null_anchor);
+
+            let max_y = anchors
+                .iter()
+                .max_by_key(|a| a.position.1)
+                .unwrap_or(&null_anchor);
+
+            let w = max_x.position.0 + max_x.dimensions.0;
+            let h = max_y.position.1 + max_y.dimensions.1;
+
+            (w, h)
+        };
+
+        PackerResult {
+            dimensions: (w, h),
+            anchors,
+        }
+    }
+
     pub fn insert_sprites(&mut self, sprites: &[SpriteData]) -> Vec<SpriteData> {
         let mut sprites = sprites.iter().cloned().collect::<Vec<SpriteData>>();
         let mut placed = Vec::new();
@@ -191,7 +226,7 @@ impl MaxRectsBin {
                 }
             };
 
-            self.place_rect(score.placement, *sprite, sprite.id);
+            self.place_rect(score.placement, sprite.id);
             sprites.retain(|s| s.id != sprite.id);
             placed.push(sprite.id);
         }
@@ -238,7 +273,7 @@ impl MaxRectsBin {
         }
     }
 
-    fn place_rect(&mut self, rect: Rect, sprite: SpriteData, sprite_id: usize) {
+    fn place_rect(&mut self, rect: Rect, sprite_id: usize) {
         let mut to_process = self.free.len();
         let mut i = 0;
 
