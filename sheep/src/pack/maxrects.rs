@@ -100,10 +100,10 @@ impl Rect {
     }
 
     pub fn contains(&self, other: &Rect) -> bool {
-        self.min_x >= other.min_x
-            && self.min_y >= other.min_y
-            && self.max_x <= other.max_x
-            && self.max_y <= other.max_y
+        self.min_x <= other.min_x
+            && self.min_y <= other.min_y
+            && self.max_x >= other.max_x
+            && self.max_y >= other.max_y
     }
 
     pub fn no_intersection(&self, other: &Rect) -> bool {
@@ -364,8 +364,8 @@ fn remove_redundant_rects(rects: &mut Vec<Rect>) {
 
         // otherwise, prune all unprocessed rects that are
         // contained by our rect and accept it
-        for j in (i..rects.len()).rev() {
-            if rects[j].contains(&next) {
+        for j in ((i + 1)..rects.len()).rev() {
+            if next.contains(&rects[j]) {
                 rects.swap_remove(j);
             }
         }
@@ -378,6 +378,24 @@ fn remove_redundant_rects(rects: &mut Vec<Rect>) {
 mod tests {
     use super::*;
     use crate::test::{self, Bencher};
+
+    #[test]
+    fn remove_redundant() {
+        let mut rects = Vec::new();
+        for i in 0..10 {
+            rects.push(Rect::xywh(i * 10, 0, 10, 10));
+            rects.push(Rect::xywh(i * 10 + 2, 2, 6, 6));
+        }
+
+        assert_eq!(rects.len(), 20);
+        remove_redundant_rects(&mut rects);
+        assert_eq!(rects.len(), 10);
+
+        for rect in &rects {
+            assert_eq!((rect.max_x - rect.min_x), 10);
+            assert_eq!((rect.max_y - rect.min_y), 10);
+        }
+    }
 
     #[test]
     fn pack_regular() {
@@ -394,17 +412,18 @@ mod tests {
 
         assert_eq!(result.len(), 1);
 
-        // They'll all be packed into 1 row in this example, so they output
-        // will be shrunk to fit the entire width plus 1 row.
-        assert_eq!(first.dimensions.0, 10 * 10);
-        assert_eq!(first.dimensions.1, 10);
+        // They'll all be packed into 1 column in this example, so they output
+        // will be shrunk to fit the entire width plus 1 column.
+        assert_eq!(first.dimensions.0, 10);
+        assert_eq!(first.dimensions.1, 10 * 10);
 
+        // The new sprite will bu pushed to the next line
         sprites.push(SpriteData::new(11, (10, 20)));
         let result = MaxrectsPacker::pack(&sprites, options);
         let first = result.iter().next().expect("should have 1 result");
 
-        assert_eq!(first.dimensions.0, 10 * 10);
-        assert_eq!(first.dimensions.1, 20);
+        assert_eq!(first.dimensions.0, 30);
+        assert_eq!(first.dimensions.1, 100);
     }
 
     #[test]
