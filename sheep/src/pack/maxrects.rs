@@ -2,31 +2,64 @@ use {Packer, PackerResult, SpriteAnchor, SpriteData};
 
 pub struct MaxrectsPacker;
 
+#[derive(Copy, Clone)]
 pub struct MaxrectsOptions {
     preferred_width: u32,
     preferred_height: u32,
+}
+
+impl Default for MaxrectsOptions {
+    fn default() -> Self {
+        MaxrectsOptions {
+            preferred_width: 4096,
+            preferred_height: 4096,
+        }
+    }
+}
+
+impl MaxrectsOptions {
+    pub fn preferred_width(mut self, width: u32) -> Self {
+        self.preferred_width = width;
+        self
+    }
+
+    pub fn preferred_height(mut self, height: u32) -> Self {
+        self.preferred_height = height;
+        self
+    }
 }
 
 impl Packer for MaxrectsPacker {
     type Options = MaxrectsOptions;
 
     fn pack(sprites: &[SpriteData], options: MaxrectsOptions) -> Vec<PackerResult> {
-        let mut bins = vec![MaxRectsBin::new(
-            options.preferred_width,
-            options.preferred_height,
-        )];
-
+        let mut bins = Vec::new();
         let mut oversized = Vec::new();
 
-        for (i, sprite) in sprites.iter().enumerate() {
-            if sprite.dimensions.0 > options.preferred_width
-                || sprite.dimensions.1 > options.preferred_height
-            {
-                oversized.push(MaxRectsBin::oversized(sprite.dimensions, i));
-                continue;
-            }
+        // First, filter out all oversized sprites
+        let mut sprites = sprites
+            .iter()
+            .enumerate()
+            .filter(|(i, sprite)| {
+                if sprite.dimensions.0 > options.preferred_width
+                    || sprite.dimensions.1 > options.preferred_height
+                {
+                    oversized.push(MaxRectsBin::oversized(sprite.dimensions, *i));
+                    false
+                } else {
+                    true
+                }
+            })
+            .map(|(_, sprite)| *sprite)
+            .collect::<Vec<_>>();
 
-            for bin in bins.iter() {}
+        // Now, keep inserting as many as possible into each bin until
+        // all sprites have been placed. Since all oversized rects have
+        // already been filtered out, this will always terminate.
+        while !sprites.is_empty() {
+            let mut bin = MaxRectsBin::new(options.preferred_width, options.preferred_height);
+            sprites = bin.insert_sprites(&sprites);
+            bins.push(bin);
         }
 
         vec![PackerResult {
@@ -75,6 +108,8 @@ enum ScoreResult {
     FitFound(RectScore),
 }
 
+// NOTE(happenslol): The score represents the leftover
+// space in case of a placement, thus _lower is better_
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct RectScore {
     placement: Rect,
@@ -114,12 +149,13 @@ impl MaxRectsBin {
         }
     }
 
-    pub fn insert_sprites(&mut self, sprites: &[SpriteData]) {
+    pub fn insert_sprites(&mut self, sprites: &[SpriteData]) -> Vec<SpriteData> {
         let mut sprites = sprites.iter().cloned().collect::<Vec<SpriteData>>();
+        let mut placed = Vec::new();
 
         while !sprites.is_empty() {
             // Score all rects and sort them by their score, best score first
-            let sorted = sprites
+            let mut placeable = sprites
                 .iter()
                 .filter_map(|sprite| {
                     match self.score_rect(sprite.dimensions.0, sprite.dimensions.1) {
@@ -129,11 +165,18 @@ impl MaxRectsBin {
                 })
                 .collect::<Vec<(RectScore, SpriteData)>>();
 
+            // If the placeable list is empty at this point, we can break out and
+            // return all SpriteDatas we were not able to place
+            if placeable.is_empty() {
+                break;
+            }
+
+            placeable.sort_by_key(|(score, _)| score.primary);
             let (score, sprite) = {
                 // Find out if there's multiple with the best score
-                let best_scored = sorted
+                let best_scored = placeable
                     .iter()
-                    .filter(|(score, _)| score.primary == sorted[0].0.primary)
+                    .filter(|(score, _)| score.primary == placeable[0].0.primary)
                     .collect::<Vec<&(RectScore, SpriteData)>>();
 
                 // If not, we have found the next best fit! Othweise, take the
@@ -150,10 +193,13 @@ impl MaxRectsBin {
 
             self.place_rect(score.placement, *sprite, sprite.id);
             sprites.retain(|s| s.id != sprite.id);
+            placed.push(sprite.id);
         }
+
+        sprites
     }
 
-    fn score_rect(&self, width: u32, height: u32) -> ScoreResult {
+    pub fn score_rect(&self, width: u32, height: u32) -> ScoreResult {
         use std::cmp::{max, min};
 
         // We score by best short side fit, since it's the best performing
@@ -207,7 +253,7 @@ impl MaxRectsBin {
             to_process -= 1;
         }
 
-        self.prune_free_list();
+        remove_redundant_rects(&mut self.free);
         self.used.push((rect, sprite_id));
     }
 
@@ -249,31 +295,40 @@ impl MaxRectsBin {
             }
         }
     }
+}
 
-    fn prune_free_list(&mut self) {
-        // TODO(happenslol): This is really ugly, since I haven't found
-        // a way to either modify the array while iterating over it, or
-        // modify the iterator variable while going over a range.
-        // I'm 99% sure there's a better way to do this.
-        let mut i = 0;
-        'outer: while i < self.free.len() {
-            let mut j = i + 1;
-
-            'inner: while j < self.free.len() {
-                if self.free[j].contains(&self.free[i]) {
-                    self.free.remove(i);
-                    i -= 1;
-                    break 'inner;
-                }
-
-                if self.free[i].contains(&self.free[j]) {
-                    self.free.remove(j);
-                } else {
-                    j += 1;
-                }
-            }
-
-            i += 1;
+fn remove_redundant_rects(rects: &mut Vec<Rect>) {
+    let mut i = 0;
+    while let Some(next) = rects.get(i).cloned() {
+        // check if it's contained by any other rect
+        if rects[i + 1..].iter().any(|s| s.contains(&next)) {
+            // if so, discard it and keep going
+            rects.swap_remove(i);
+            continue;
         }
+
+        // otherwise, prune all unprocessed rects that are
+        // contained by our rect and accept it
+        for j in (i..rects.len()).rev() {
+            if rects[j].contains(&next) {
+                rects.swap_remove(j);
+            }
+        }
+
+        i += 1;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pack_regular() {
+        let sprites = (0..10_000)
+            .map(|i| SpriteData::new(i, (100, 100)))
+            .collect::<Vec<SpriteData>>();
+
+        let result = MaxrectsPacker::pack(&sprites, Default::default());
     }
 }
