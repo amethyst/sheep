@@ -74,34 +74,43 @@ impl Packer for MaxrectsPacker {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct Rect {
-    pub x: u32,
-    pub y: u32,
-    pub width: u32,
-    pub height: u32,
+    pub min_x: u32,
+    pub min_y: u32,
+    pub max_x: u32,
+    pub max_y: u32,
 }
 
 impl Rect {
-    pub fn new(x: u32, y: u32, width: u32, height: u32) -> Self {
+    pub fn xywh(x: u32, y: u32, width: u32, height: u32) -> Self {
         Rect {
-            x,
-            y,
-            width,
-            height,
+            min_x: x,
+            min_y: y,
+            max_x: x + width,
+            max_y: y + height,
+        }
+    }
+
+    pub fn new(min_x: u32, min_y: u32, max_x: u32, max_y: u32) -> Self {
+        Rect {
+            min_x,
+            min_y,
+            max_x,
+            max_y,
         }
     }
 
     pub fn contains(&self, other: &Rect) -> bool {
-        self.x >= other.x
-            && self.y >= other.y
-            && self.x + self.width <= other.x + other.width
-            && self.y + self.height <= other.y + other.height
+        self.min_x >= other.min_x
+            && self.min_y >= other.min_y
+            && self.max_x <= other.max_x
+            && self.max_y <= other.max_y
     }
 
     pub fn no_intersection(&self, other: &Rect) -> bool {
-        self.x >= other.x + other.width
-            || self.x + self.width <= other.x
-            || self.y >= other.y + other.height
-            || self.y + self.height <= other.y
+        self.min_x >= other.max_x
+            || self.max_x <= other.min_x
+            || self.min_y >= other.max_y
+            || self.max_y <= other.min_y
     }
 }
 
@@ -135,13 +144,13 @@ impl MaxRectsBin {
             bin_width: width,
             bin_height: height,
             used: Vec::new(),
-            free: vec![Rect::new(0, 0, width, height)],
+            free: vec![Rect::xywh(0, 0, width, height)],
             oversized: false,
         }
     }
 
     pub fn oversized(dimensions: (u32, u32), index: usize) -> Self {
-        let used_rect = Rect::new(0, 0, dimensions.0, dimensions.1);
+        let used_rect = Rect::xywh(0, 0, dimensions.0, dimensions.1);
 
         MaxRectsBin {
             bin_width: dimensions.0,
@@ -158,8 +167,8 @@ impl MaxRectsBin {
             .iter()
             .map(|(rect, id)| SpriteAnchor {
                 id: *id,
-                position: (rect.x, rect.y),
-                dimensions: (rect.width, rect.height),
+                position: (rect.min_x, rect.min_y),
+                dimensions: (rect.max_x - rect.min_x, rect.max_y - rect.min_y),
             })
             .collect::<Vec<SpriteAnchor>>();
 
@@ -239,10 +248,14 @@ impl MaxRectsBin {
         let mut best_short = std::u32::MAX;
         let mut best_long = std::u32::MAX;
         let mut placement = Rect::new(0, 0, 0, 0);
+        let mut fit_found = false;
 
-        self.free.iter().for_each(|it| {
-            let leftover_horiz = (it.width as i32 - width as i32).abs() as u32;
-            let leftover_vert = (it.height as i32 - height as i32).abs() as u32;
+        for rect in &self.free {
+            let other_width = (rect.max_x - rect.min_x) as i32;
+            let other_height = (rect.max_y - rect.min_y) as i32;
+
+            let leftover_horiz = (other_width - width as i32).abs() as u32;
+            let leftover_vert = (other_height - height as i32).abs() as u32;
 
             let short_side_fit = min(leftover_horiz, leftover_vert);
             let long_side_fit = max(leftover_horiz, leftover_vert);
@@ -252,14 +265,12 @@ impl MaxRectsBin {
             {
                 best_short = short_side_fit;
                 best_long = long_side_fit;
-                placement = Rect::new(it.x, it.y, width, height);
+                placement = Rect::xywh(rect.min_x, rect.min_y, width, height);
+                fit_found = true;
             }
-        });
+        }
 
-        // TODO(happenslol): This is kind of a primitive way to check,
-        // since it's directly translated from the reference implementation.
-        // This function can probably be improved a lot, style-wise
-        if placement.height == 0 {
+        if !fit_found {
             ScoreResult::NoFit
         } else {
             ScoreResult::FitFound(RectScore {
@@ -289,40 +300,52 @@ impl MaxRectsBin {
         self.used.push((rect, sprite_id));
     }
 
-    fn split_rect(&mut self, to_split: Rect, to_place: Rect) {
-        if to_place.x < to_split.x + to_split.width && to_place.x + to_place.width > to_split.x {
+    fn split_rect(&mut self, split: Rect, place: Rect) {
+        if place.min_x < split.max_x && place.max_x > split.min_x {
             // New node at the top side of the placed node.
-            if to_place.y > to_split.y && to_place.y < to_split.y + to_split.height {
+            if place.min_y > split.min_y && place.min_y < split.max_y {
+                let height = split.max_y - split.min_y;
+                let new_min_y = place.min_y - split.min_y;
+
                 self.free.push(Rect {
-                    y: to_place.y - to_split.y,
-                    ..to_split
+                    min_y: new_min_y,
+                    max_y: new_min_y + height,
+                    ..split
                 })
             }
 
-            if to_place.y + to_place.height < to_split.y + to_split.height {
+            if place.max_y < split.max_y {
+                let new_min_y = place.max_y;
+                let height = split.max_y - place.max_y;
+
                 self.free.push(Rect {
-                    y: to_place.y + to_place.height,
-                    height: to_split.y + to_split.height - (to_place.y + to_place.height),
-                    ..to_split
+                    min_y: new_min_y,
+                    max_y: new_min_y + height,
+                    ..split
                 });
             }
         }
 
-        if to_place.y < to_split.y + to_split.height && to_place.y + to_place.height > to_split.y {
+        if place.min_y < split.max_y && place.max_y > split.min_y {
             // New node at the left side of the placed node.
-            if to_place.x > to_split.x && to_place.x < to_split.x + to_split.width {
+            if place.min_x > split.min_x && place.min_x < split.max_x {
+                let width = place.min_x - split.min_x;
+
                 self.free.push(Rect {
-                    width: to_place.x - to_split.x,
-                    ..to_split
+                    max_x: split.min_x + width,
+                    ..split
                 });
             }
 
             // New node at the right side of the placed node.
-            if to_place.x + to_place.width < to_split.x + to_split.width {
+            if place.max_x < split.max_x {
+                let new_min_x = place.max_x;
+                let width = split.max_x - place.max_x;
+
                 self.free.push(Rect {
-                    x: to_place.x + to_place.width,
-                    width: to_split.x + to_split.width - (to_place.x + to_place.width),
-                    ..to_split
+                    min_x: new_min_x,
+                    max_x: new_min_x + width,
+                    ..split
                 });
             }
         }
