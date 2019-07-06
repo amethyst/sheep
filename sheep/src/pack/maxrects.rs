@@ -291,7 +291,7 @@ impl MaxRectsBin {
                 continue;
             }
 
-            let to_split = self.free.remove(i);
+            let to_split = self.free.swap_remove(i);
             self.split_rect(to_split, rect);
             to_process -= 1;
         }

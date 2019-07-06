@@ -7,12 +7,15 @@ extern crate sheep;
 use clap::{App, AppSettings, Arg, SubCommand};
 use image::RgbaImage;
 use serde::Serialize;
-use sheep::{AmethystFormat, AmethystNamedFormat, Format, InputSprite, SimplePacker};
+use sheep::{AmethystFormat, AmethystNamedFormat, InputSprite, MaxrectsPacker, SimplePacker};
 use std::str::FromStr;
 use std::{fs::File, io::prelude::*};
 
 const DEFAULT_FORMAT: &'static str = "amethyst";
-const AVAILABLE_FORMATS: [&str; 2] = ["amethyst", "amethyst_named"];
+const DEFAULT_PACKER: &'static str = "maxrects";
+
+const AVAILABLE_FORMATS: [&'static str; 2] = ["amethyst", "amethyst_named"];
+const AVAILABLE_PACKERS: [&'static str; 2] = ["simple", "maxrects"];
 
 fn main() {
     let app = App::new("sheep")
@@ -34,12 +37,23 @@ fn main() {
                         .default_value("out"),
                 )
                 .arg(
+                    Arg::with_name("packer")
+                        .help("Packing algorithm to use")
+                        .possible_values(&AVAILABLE_PACKERS)
+                        .short("p")
+                        .long("packer")
+                        .takes_value(true)
+                        .required(false)
+                        .default_value(DEFAULT_PACKER),
+                )
+                .arg(
                     Arg::with_name("format")
                         .help("Determines the fields present in the serialized output.")
                         .possible_values(&AVAILABLE_FORMATS)
                         .short("f")
                         .long("format")
                         .takes_value(true)
+                        .required(false)
                         .default_value(DEFAULT_FORMAT),
                 ),
         );
@@ -57,89 +71,91 @@ fn main() {
                 .value_of("output")
                 .expect("Unreachable: param has default value");
 
-            match matches.value_of("format") {
-                Some("amethyst_named") => {
-                    let names = input
-                        .iter()
-                        .map(|path| {
-                            std::path::PathBuf::from(&path)
-                                .file_stem()
-                                .and_then(|name| name.to_str())
-                                .map(|name| {
-                                    String::from_str(name)
-                                        .expect("could not parse string from file name")
-                                })
-                                .expect("Failed to extract file name")
-                        })
-                        .collect();
+            let sprites = load_images(&input);
 
-                    do_pack::<AmethystNamedFormat>(input, names)
-                        .map(|(output_image, meta)| write_files(out, output_image, meta))
-                        .expect("Failed to pack sprites")
-                }
-                Some(DEFAULT_FORMAT) => do_pack::<AmethystFormat>(input, ())
-                    .map(|(output_image, meta)| write_files(out, output_image, meta))
-                    .expect("Failed to pack sprites"),
-                _ => {
-                    panic!("Unknown format");
-                }
+            // NOTE(happenslol): By default, we're using rgba8 right now,
+            // so the stride is always 4
+            let results = match matches.value_of("packer") {
+                Some("maxrects") => sheep::pack::<MaxrectsPacker>(sprites, 4, Default::default()),
+                Some("simple") => sheep::pack::<SimplePacker>(sprites, 4, ()),
+                _ => panic!("Unknown packer"),
             };
+
+            if results.is_empty() {
+                panic!("No output was produced");
+            }
+
+            let is_single_sheet = results.len() == 1;
+
+            for (i, sheet) in results.iter().enumerate() {
+                let filename = if i == 0 && is_single_sheet {
+                    String::from(out)
+                } else {
+                    format!("{}-{:02}", out, i)
+                };
+
+                let outbuf = RgbaImage::from_vec(
+                    sheet.dimensions.0,
+                    sheet.dimensions.1,
+                    sheet.bytes.clone(),
+                )
+                .expect("Failed to create image from spritesheet");
+
+                match matches.value_of("format") {
+                    Some("amethyst_named") => {
+                        let names = get_filenames(&input);
+                        let meta = sheep::encode::<AmethystNamedFormat>(&sheet, names);
+                        write_files(&filename, outbuf, meta);
+                    }
+                    Some("amethyst") => {
+                        let meta = sheep::encode::<AmethystFormat>(&sheet, ());
+                        write_files(&filename, outbuf, meta);
+                    }
+                    _ => panic!("Unknown format"),
+                };
+            }
         }
         _ => {}
     }
 }
 
-fn do_pack<F>(
-    input: Vec<String>,
-    options: F::Options,
-) -> Result<(image::RgbaImage, F::Data), &'static str>
-where
-    F: Format,
-{
-    let mut sprites = Vec::new();
+fn get_filenames(input: &[String]) -> Vec<String> {
+    input
+        .iter()
+        .map(|path| {
+            std::path::PathBuf::from(&path)
+                .file_stem()
+                .and_then(|name| name.to_str())
+                .map(|name| String::from_str(name).expect("could not parse string from file name"))
+                .expect("Failed to extract file name")
+        })
+        .collect()
+}
 
-    for path in input {
-        let img = image::open(&path).expect("Failed to open image");
-        let img_owned;
-        let img = {
-            if let Some(img) = img.as_rgba8() {
-                img
-            } else {
-                img_owned = img.to_rgba();
-                &img_owned
-            }
-        };
+fn load_images(input: &[String]) -> Vec<InputSprite> {
+    input
+        .iter()
+        .map(|path| {
+            let img = image::open(&path).expect("Failed to open image");
+            let img_owned;
+            let img = {
+                if let Some(img) = img.as_rgba8() {
+                    img
+                } else {
+                    img_owned = img.to_rgba();
+                    &img_owned
+                }
+            };
 
-        let dimensions = img.dimensions();
-        let bytes = img
-            .pixels()
-            .flat_map(|it| it.data.iter().map(|it| *it))
-            .collect::<Vec<u8>>();
+            let dimensions = img.dimensions();
+            let bytes = img
+                .pixels()
+                .flat_map(|it| it.data.iter().map(|it| *it))
+                .collect::<Vec<u8>>();
 
-        let sprite = InputSprite { dimensions, bytes };
-        sprites.push(sprite);
-    }
-
-    // NOTE(happenslol): By default, we're using rgba8 right now,
-    // so the stride is always 4
-    let results = sheep::pack::<SimplePacker>(sprites, 4, ());
-
-    // NOTE(happenslol): SimplePacker always outputs 1 sheet.
-    let sprite_sheet = results
-        .into_iter()
-        .next()
-        .expect("Should have returned a spritesheet");
-
-    let meta = sheep::encode::<F>(&sprite_sheet, options);
-
-    let outbuf = RgbaImage::from_vec(
-        sprite_sheet.dimensions.0,
-        sprite_sheet.dimensions.1,
-        sprite_sheet.bytes,
-    )
-    .ok_or("Failed to construct image from sprite sheet bytes")?;
-
-    return Ok((outbuf, meta));
+            InputSprite { dimensions, bytes }
+        })
+        .collect()
 }
 
 fn write_files<S: Serialize>(output_path: &str, outbuf: RgbaImage, meta: S) {
