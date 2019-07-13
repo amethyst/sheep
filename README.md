@@ -1,4 +1,4 @@
-# Sheep
+# Sheep 🐑
 
 `sheep` (Sprite**shee**t **p**acker) is a lightweight and modular library used to create spritesheets. It aims to impose as little restrictions as possible on the usage of its API so that it can be used in asset pipelines.
 
@@ -25,7 +25,7 @@ If you want to use the CLI from source, simple clone the repo and run `cargo run
 
 ## Implementing your own `Packer` and `Format`
 
-Sheep achieves its modularity by letting you choose the implementation it will use for packing the sprites and encoding the metadata. Right now, two common packing algorithms are provided (`SimplePacker` and `MaxrectsPacker`, see [#Packers]), as well as the data format used by the [amethyst engine](https://github.com/amethyst/amethyst) (`AmethystFormat`). There will be more in the future, however, you can also choose your own packing algorithm and format:
+Sheep achieves its modularity by letting you choose the implementation it will use for packing the sprites and encoding the metadata. Right now, two common packing algorithms are provided (`SimplePacker` and `MaxrectsPacker`, see [packers](#Packers)), as well as the data format used by the [amethyst engine](https://github.com/amethyst/amethyst) (`AmethystFormat`). There will be more in the future, however, you can also choose your own packing algorithm and format:
 
 #### Implementing `Packer`
 
