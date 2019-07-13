@@ -7,7 +7,9 @@ extern crate sheep;
 use clap::{App, AppSettings, Arg, SubCommand};
 use image::RgbaImage;
 use serde::Serialize;
-use sheep::{AmethystFormat, AmethystNamedFormat, InputSprite, MaxrectsPacker, SimplePacker};
+use sheep::{
+    AmethystFormat, AmethystNamedFormat, InputSprite, MaxrectsOptions, MaxrectsPacker, SimplePacker,
+};
 use std::str::FromStr;
 use std::{fs::File, io::prelude::*};
 
@@ -48,13 +50,22 @@ fn main() {
                 )
                 .arg(
                     Arg::with_name("format")
-                        .help("Determines the fields present in the serialized output.")
+                        .help("Determines the fields present in the serialized output")
                         .possible_values(&AVAILABLE_FORMATS)
                         .short("f")
                         .long("format")
                         .takes_value(true)
                         .required(false)
                         .default_value(DEFAULT_FORMAT),
+                )
+                .arg(
+                    Arg::with_name("options")
+                        .help("Settings that will be passed to the selected packer")
+                        .short("s")
+                        .long("options")
+                        .takes_value(true)
+                        .multiple(true)
+                        .required(false),
                 ),
         );
 
@@ -76,7 +87,27 @@ fn main() {
             // NOTE(happenslol): By default, we're using rgba8 right now,
             // so the stride is always 4
             let results = match matches.value_of("packer") {
-                Some("maxrects") => sheep::pack::<MaxrectsPacker>(sprites, 4, Default::default()),
+                Some("maxrects") => {
+                    let max_width = matches
+                        .values_of("options")
+                        .and_then(|mut options| options.find(|o| o.starts_with("max_width")))
+                        .and_then(|found| found.split("=").nth(1))
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .unwrap_or(4096);
+
+                    let max_height = matches
+                        .values_of("options")
+                        .and_then(|mut options| options.find(|o| o.starts_with("max_height")))
+                        .and_then(|found| found.split("=").nth(1))
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .unwrap_or(4096);
+
+                    let options = MaxrectsOptions::default()
+                        .max_width(max_width)
+                        .max_height(max_height);
+
+                    sheep::pack::<MaxrectsPacker>(sprites, 4, options)
+                }
                 Some("simple") => sheep::pack::<SimplePacker>(sprites, 4, ()),
                 _ => panic!("Unknown packer"),
             };

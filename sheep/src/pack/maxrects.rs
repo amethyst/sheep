@@ -4,27 +4,27 @@ pub struct MaxrectsPacker;
 
 #[derive(Copy, Clone)]
 pub struct MaxrectsOptions {
-    preferred_width: u32,
-    preferred_height: u32,
+    max_width: u32,
+    max_height: u32,
 }
 
 impl Default for MaxrectsOptions {
     fn default() -> Self {
         MaxrectsOptions {
-            preferred_width: 4096,
-            preferred_height: 4096,
+            max_width: 4096,
+            max_height: 4096,
         }
     }
 }
 
 impl MaxrectsOptions {
-    pub fn preferred_width(mut self, width: u32) -> Self {
-        self.preferred_width = width;
+    pub fn max_width(mut self, width: u32) -> Self {
+        self.max_width = width;
         self
     }
 
-    pub fn preferred_height(mut self, height: u32) -> Self {
-        self.preferred_height = height;
+    pub fn max_height(mut self, height: u32) -> Self {
+        self.max_height = height;
         self
     }
 }
@@ -41,8 +41,8 @@ impl Packer for MaxrectsPacker {
             .iter()
             .enumerate()
             .filter(|(i, sprite)| {
-                if sprite.dimensions.0 > options.preferred_width
-                    || sprite.dimensions.1 > options.preferred_height
+                if sprite.dimensions.0 > options.max_width
+                    || sprite.dimensions.1 > options.max_height
                 {
                     oversized.push(MaxRectsBin::oversized(sprite.dimensions, *i));
                     false
@@ -57,7 +57,7 @@ impl Packer for MaxrectsPacker {
         // all sprites have been placed. Since all oversized rects have
         // already been filtered out, this will always terminate.
         while !sprites.is_empty() {
-            let mut bin = MaxRectsBin::new(options.preferred_width, options.preferred_height);
+            let mut bin = MaxRectsBin::new(options.max_width, options.max_height);
             sprites = bin.insert_sprites(&sprites);
             bins.push(bin);
         }
@@ -403,8 +403,8 @@ mod tests {
             .collect::<Vec<SpriteData>>();
 
         let options = MaxrectsOptions::default()
-            .preferred_width(10 * 10)
-            .preferred_height(10 * 10);
+            .max_width(10 * 10)
+            .max_height(10 * 10);
 
         let result = MaxrectsPacker::pack(&sprites, options);
         let first = result.iter().next().expect("should have 1 result");
@@ -426,14 +426,28 @@ mod tests {
     }
 
     #[test]
+    fn pack_multiple() {
+        let sprites = (0..500)
+            .map(|i| SpriteData::new(i, (10, 10)))
+            .collect::<Vec<SpriteData>>();
+
+        let options = MaxrectsOptions::default()
+            .max_width(10 * 10)
+            .max_height(10 * 10);
+
+        let result = MaxrectsPacker::pack(&sprites, options);
+        assert_eq!(result.len(), 5);
+    }
+
+    #[test]
     fn pack_oversized() {
         let oversized = (0..1000)
             .map(|i| SpriteData::new(i, (100, 100)))
             .collect::<Vec<SpriteData>>();
 
         let options = MaxrectsOptions::default()
-            .preferred_width(50)
-            .preferred_height(50);
+            .max_width(50)
+            .max_height(50);
 
         let result = MaxrectsPacker::pack(&oversized, options);
 
