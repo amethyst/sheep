@@ -2,6 +2,15 @@
 name = "sheep"
 version = "0.2.1"
 authors = ["Hilmar Wiegand <me@hwgnd.de>"]
+description = "Modular and lightweight spritesheet packing library"
+keywords = ["game", "engine", "sdk", "amethyst", "sprites", "2d", "packing"]
+categories = ["game-engines"]
+
+homepage = "https://amethyst.rs/"
+repository = "https://github.com/amethyst/sheep"
+
+readme = "../README.md"
+license = "MIT/Apache-2.0"
 
 [features]
 default = ["amethyst"]
