@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog][kc], and this project adheres to
 [kc]: http://keepachangelog.com/
 [sv]: http://semver.org/
 
-## sheep - [0.2.1] | sheep_cli - [0.2.0]
+## sheep 0.2.1, sheep_cli 0.2.0 - 2019-07
 
 - Initial [crates.io](https://crates.io) release
 

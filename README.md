@@ -77,9 +77,9 @@ let meta = sheep::encode::<MyFormat>(&sprite_sheet);
 
 ## Packers
 
-Right now, there are two implementations to use:
+Right now, there are two implementations to choose from:
 
-- maxrects (**recommended**)
+- MAXRECTS (**recommended**)
 
 Implementation of the maxrects sprite packing algorithm. The paper and original implementation used as a reference for this can be found [here](https://github.com/juj/RectangleBinPack). This algorithm should yield optimal results in most scenarios.
 
