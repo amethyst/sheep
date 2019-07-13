@@ -3,7 +3,7 @@ name = "sheep_cli"
 version = "0.2.0"
 authors = ["Hilmar Wiegand <me@hwgnd.de>"]
 description = "Modular and lightweight spritesheet packer"
-keywords = ["game", "engine", "sdk", "amethyst", "sprites", "2d", "packing", "cli"]
+keywords = ["sdk", "amethyst", "sprites", "packing", "cli"]
 categories = ["game-engines"]
 
 homepage = "https://amethyst.rs/"
