@@ -1,4 +1,4 @@
-# Sheep
+# Sheep 🐑
 
 `sheep` (Sprite**shee**t **p**acker) is a lightweight and modular library used to create spritesheets. It aims to impose as little restrictions as possible on the usage of its API so that it can be used in asset pipelines.
 
@@ -25,7 +25,7 @@ If you want to use the CLI from source, simple clone the repo and run `cargo run
 
 ## Implementing your own `Packer` and `Format`
 
-Sheep achieves it's modularity by letting you choose the implementation it will use for packing the sprites and encoding the metadata. Right now, only a very naive packing algorithm is provided (`SimplePacker`), as well as the data format used by the [amethyst engine](https://github.com/amethyst/amethyst) (`AmethystFormat`). There will be more in the future, but for now, you can choose your own packing algorithm and format:
+Sheep achieves its modularity by letting you choose the implementation it will use for packing the sprites and encoding the metadata. Right now, two common packing algorithms are provided (`SimplePacker` and `MaxrectsPacker`, see [packers](#Packers)), as well as the data format used by the [amethyst engine](https://github.com/amethyst/amethyst) (`AmethystFormat`). There will be more in the future, however, you can also choose your own packing algorithm and format:
 
 #### Implementing `Packer`
 
@@ -77,9 +77,9 @@ let meta = sheep::encode::<MyFormat>(&sprite_sheet);
 
 ## Packers
 
-Right now, there are two implementations to use:
+Right now, there are two implementations to choose from:
 
-- maxrects (**recommended**)
+- MAXRECTS (**recommended**)
 
 Implementation of the maxrects sprite packing algorithm. The paper and original implementation used as a reference for this can be found [here](https://github.com/juj/RectangleBinPack). This algorithm should yield optimal results in most scenarios.
 
