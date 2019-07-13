@@ -25,7 +25,7 @@ If you want to use the CLI from source, simple clone the repo and run `cargo run
 
 ## Implementing your own `Packer` and `Format`
 
-Sheep achieves it's modularity by letting you choose the implementation it will use for packing the sprites and encoding the metadata. Right now, only a very naive packing algorithm is provided (`SimplePacker`), as well as the data format used by the [amethyst engine](https://github.com/amethyst/amethyst) (`AmethystFormat`). There will be more in the future, but for now, you can choose your own packing algorithm and format:
+Sheep achieves its modularity by letting you choose the implementation it will use for packing the sprites and encoding the metadata. Right now, two common packing algorithms are provided (`SimplePacker` and `MaxrectsPacker`, see [#Packers]), as well as the data format used by the [amethyst engine](https://github.com/amethyst/amethyst) (`AmethystFormat`). There will be more in the future, however, you can also choose your own packing algorithm and format:
 
 #### Implementing `Packer`
 
