@@ -343,7 +343,7 @@ dependencies = [
 
 [[package]]
 name = "sheep"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "image 0.20.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ron 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -353,13 +353,13 @@ dependencies = [
 
 [[package]]
 name = "sheep_cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap 2.32.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.20.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ron 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "sheep 0.1.0",
+ "sheep 0.2.1",
 ]
 
 [[package]]

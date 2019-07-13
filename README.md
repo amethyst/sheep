@@ -6,7 +6,22 @@ The project is in heavy development and the API might change a few times until w
 
 ## Usage
 
-To use the CLI, simple use `cargo run -- ...`, usage hints are provided. For an example on how to use the library, please see the `simple_pack` example in the `sheep/examples` directory.
+To use the CLI, simply install it with cargo:
+
+```
+cargo install sheep_cli
+```
+
+Usagen hints are provided. To see all options, simply run the command with no arguments. Options can be passed to the packers using the `--options` flag, as space separated `key=value` pairs.
+By default, the `maxrects` packer will be used, see [packers](#Packers) for more information.
+
+**Example:**
+
+```
+sheep pack --options max_width=1024 max_height=1024 sprites/*.png
+```
+
+If you want to use the CLI from source, simple clone the repo and run `cargo run -- ...`. For an example on how to use the library directly, please see the `simple_pack` example in the `sheep/examples` directory.
 
 ## Implementing your own `Packer` and `Format`
 
@@ -60,16 +75,29 @@ let sprite_sheet = sheep::pack::<MyPacker>(sprites, 4);
 let meta = sheep::encode::<MyFormat>(&sprite_sheet);
 ```
 
+## Packers
+
+Right now, there are two implementations to use:
+
+- maxrects (**recommended**)
+
+Implementation of the maxrects sprite packing algorithm. The paper and original implementation used as a reference for this can be found [here](https://github.com/juj/RectangleBinPack). This algorithm should yield optimal results in most scenarios.
+
+- simple
+
+A naive implementation that will sort the sprites by area and then pack them all into a single texture. This won't scale very well since you can't limit the maximum size of the resulting sprite sheet, but can be quicker than maxrects in simple scenarios.
+
 ## Roadmap
 
 Here are the planned features for `sheep`:
 
-* Support for multiple output textures (bins)
-* Smart output texture sizing
-* More packing algorithms
-    * MAXRECTS
-    * Skyline
-* More meta formats
+- ~~Support for multiple output textures (bins)~~
+- ~~Smart output texture sizing~~
+- More packing algorithms
+  - ~~MAXRECTS~~
+  - Skyline
+- More meta formats
+- More image formats
 
 ## License
 

@@ -4,7 +4,9 @@ use {Packer, PackerResult, SpriteAnchor, SpriteData};
 pub struct SimplePacker;
 
 impl Packer for SimplePacker {
-    fn pack(sprites: &[SpriteData]) -> PackerResult {
+    type Options = ();
+
+    fn pack(sprites: &[SpriteData], _options: ()) -> Vec<PackerResult> {
         let mut sprites = sprites.iter().cloned().collect::<Vec<SpriteData>>();
 
         let mut free = Vec::new();
@@ -74,10 +76,12 @@ impl Packer for SimplePacker {
         // input sprites
         absolute.sort_by_key(|s| s.id);
 
-        PackerResult {
+        let result = PackerResult {
             dimensions: (width, height),
             anchors: absolute,
-        }
+        };
+
+        vec![result]
     }
 }
 
@@ -105,9 +109,9 @@ mod tests {
             .map(|i| SpriteData::new(i, (20, 20)))
             .collect::<Vec<SpriteData>>();
 
-        let result = SimplePacker::pack(&sprites);
+        let result = SimplePacker::pack(&sprites, ());
 
-        assert_eq!(result.dimensions.0, 20 * 4);
-        assert_eq!(result.dimensions.1, 20 * 4);
+        assert_eq!(result[0].dimensions.0, 20 * 4);
+        assert_eq!(result[0].dimensions.1, 20 * 4);
     }
 }

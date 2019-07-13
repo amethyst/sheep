@@ -1,3 +1,4 @@
+pub mod maxrects;
 pub mod simple;
 
 use {SpriteAnchor, SpriteData};
@@ -9,5 +10,7 @@ pub struct PackerResult {
 }
 
 pub trait Packer {
-    fn pack(sprites: &[SpriteData]) -> PackerResult;
+    type Options;
+
+    fn pack(sprites: &[SpriteData], options: Self::Options) -> Vec<PackerResult>;
 }

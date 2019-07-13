@@ -11,7 +11,11 @@ mod sprite;
 
 pub use {
     format::Format,
-    pack::{simple::SimplePacker, Packer, PackerResult},
+    pack::{
+        maxrects::{MaxrectsOptions, MaxrectsPacker},
+        simple::SimplePacker,
+        Packer, PackerResult,
+    },
     sprite::{InputSprite, Sprite, SpriteAnchor, SpriteData},
 };
 
@@ -21,7 +25,7 @@ pub use format::named::AmethystNamedFormat;
 
 use sprite::{create_pixel_buffer, write_sprite};
 
-#[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub struct SpriteSheet {
     pub bytes: Vec<u8>,
     pub stride: usize,
@@ -29,7 +33,11 @@ pub struct SpriteSheet {
     anchors: Vec<SpriteAnchor>,
 }
 
-pub fn pack<P: Packer>(input: Vec<InputSprite>, stride: usize) -> SpriteSheet {
+pub fn pack<P: Packer>(
+    input: Vec<InputSprite>,
+    stride: usize,
+    options: P::Options,
+) -> Vec<SpriteSheet> {
     let sprites = input
         .into_iter()
         .enumerate()
@@ -41,29 +49,33 @@ pub fn pack<P: Packer>(input: Vec<InputSprite>, stride: usize) -> SpriteSheet {
         .map(|it| it.data)
         .collect::<Vec<SpriteData>>();
 
-    let packer_result = P::pack(&sprite_data);
-    let mut buffer = create_pixel_buffer(packer_result.dimensions, stride);
-    sprites.into_iter().for_each(|sprite| {
-        let anchor = packer_result
-            .anchors
-            .iter()
-            .find(|it| it.id == sprite.data.id)
-            .expect("Should have found anchor for sprite");
-        write_sprite(
-            &mut buffer,
-            packer_result.dimensions,
-            stride,
-            &sprite,
-            &anchor,
-        );
-    });
+    let packer_result = P::pack(&sprite_data, options);
 
-    SpriteSheet {
-        bytes: buffer,
-        stride: stride,
-        dimensions: packer_result.dimensions,
-        anchors: packer_result.anchors,
-    }
+    packer_result
+        .into_iter()
+        .map(|sheet| {
+            let mut buffer = create_pixel_buffer(sheet.dimensions, stride);
+            sprites
+                .iter()
+                .filter_map(|sprite| {
+                    sheet
+                        .anchors
+                        .iter()
+                        .find(|anchor| anchor.id == sprite.data.id)
+                        .map(|anchor| (sprite, anchor))
+                })
+                .for_each(|(sprite, anchor)| {
+                    write_sprite(&mut buffer, sheet.dimensions, stride, &sprite, &anchor);
+                });
+
+            SpriteSheet {
+                bytes: buffer,
+                stride: stride,
+                dimensions: sheet.dimensions,
+                anchors: sheet.anchors,
+            }
+        })
+        .collect()
 }
 
 pub fn encode<F>(sprite_sheet: &SpriteSheet, options: F::Options) -> F::Data
