@@ -66,6 +66,12 @@ fn main() {
                         .takes_value(true)
                         .multiple(true)
                         .required(false),
+                )
+                .arg(
+                    Arg::with_name("trim")
+                        .help("Trim transparent sprite sides")
+                        .short("t")
+                        .long("trim"),
                 ),
         );
 
@@ -82,7 +88,12 @@ fn main() {
                 .value_of("output")
                 .expect("Unreachable: param has default value");
 
-            let sprites = load_images(&input);
+            let mut sprites = load_images(&input);
+
+            if matches.is_present("trim") {
+                // stride is 4 and alpha index is 3 because rgba8 is used by default
+                sprites = sheep::trim(sprites.as_slice(), 4, 3);
+            }
 
             // NOTE(happenslol): By default, we're using rgba8 right now,
             // so the stride is always 4
