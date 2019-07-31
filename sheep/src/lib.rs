@@ -39,28 +39,42 @@ pub struct SpriteSheet {
     anchors: Vec<SpriteAnchor>,
 }
 
+#[derive(Debug, Clone)]
+enum Alias {
+    Alias(Vec<usize>),
+    NotAliased,
+    Aliased,
+}
+
 pub fn pack<P: Packer>(
     input: Vec<InputSprite>,
     stride: usize,
     options: P::Options,
 ) -> Vec<SpriteSheet> {
     let mut hashes: HashMap<&[u8], usize, BuildHasherDefault<XxHash64>> = Default::default();
-    let mut aliases = HashMap::<usize, Vec<usize>>::new();
+    let mut aliases: Vec<Alias> = (0..input.len()).map(|_| Alias::NotAliased).collect();
 
     for (id, sprite) in input.iter().enumerate() {
         let alias = hashes.entry(sprite.bytes.as_slice()).or_insert(id);
+        // this sprite was already seen
         if *alias != id {
-            let entry = aliases.get_mut(alias).unwrap();
-            entry.push(id);
-        } else {
-            aliases.insert(id, vec![]);
+            if let Alias::Alias(ref mut aliases) = aliases[*alias] {
+                aliases.push(id);
+            } else {
+                aliases[*alias] = Alias::Alias(vec![id]);
+            }
+            aliases[id] = Alias::Aliased;
         }
     }
 
     let sprites = input
         .into_iter()
         .enumerate()
-        .filter(|(idx, _)| aliases.contains_key(idx))
+        .filter(|(idx, _)| match aliases[*idx] {
+            Alias::Aliased => false,
+            Alias::NotAliased => true,
+            Alias::Alias(_) => true,
+        })
         .map(|(idx, sprite)| Sprite::from_input(idx, sprite))
         .collect::<Vec<Sprite>>();
 
@@ -84,7 +98,7 @@ pub fn pack<P: Packer>(
                     &sprites[anchor.id],
                     &anchor,
                 );
-                if let Some(aliases) = aliases.get(&anchor.id) {
+                if let Alias::Alias(ref aliases) = aliases[anchor.id] {
                     additional_anchors.extend(aliases.iter().map(|alias| SpriteAnchor {
                         id: *alias,
                         ..*anchor
