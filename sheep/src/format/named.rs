@@ -49,7 +49,7 @@ impl Format for AmethystNamedFormat {
     ) -> Self::Data {
         let sprite_positions = sprites
             .iter()
-            .zip(options.into_iter())
+            .map(|anchor| (anchor, options[anchor.id].clone()))
             .map(Into::into)
             .collect::<Vec<NamedSpritePosition>>();
 

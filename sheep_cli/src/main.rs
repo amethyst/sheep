@@ -135,6 +135,7 @@ fn main() {
                 match matches.value_of("format") {
                     Some("amethyst_named") => {
                         let names = get_filenames(&input);
+                        println!("{:?}", names);
                         let meta = sheep::encode::<AmethystNamedFormat>(&sheet, names);
                         write_files(&filename, outbuf, meta);
                     }

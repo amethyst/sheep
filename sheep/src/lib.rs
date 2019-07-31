@@ -55,18 +55,15 @@ pub fn pack<P: Packer>(
         .into_iter()
         .map(|sheet| {
             let mut buffer = create_pixel_buffer(sheet.dimensions, stride);
-            sprites
-                .iter()
-                .filter_map(|sprite| {
-                    sheet
-                        .anchors
-                        .iter()
-                        .find(|anchor| anchor.id == sprite.data.id)
-                        .map(|anchor| (sprite, anchor))
-                })
-                .for_each(|(sprite, anchor)| {
-                    write_sprite(&mut buffer, sheet.dimensions, stride, &sprite, &anchor);
-                });
+            for anchor in &sheet.anchors {
+                write_sprite(
+                    &mut buffer,
+                    sheet.dimensions,
+                    stride,
+                    &sprites[anchor.id],
+                    &anchor,
+                );
+            }
 
             SpriteSheet {
                 bytes: buffer,
