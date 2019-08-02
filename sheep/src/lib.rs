@@ -21,7 +21,6 @@ pub use {
 
 #[cfg(feature = "amethyst")]
 pub use format::amethyst::{AmethystFormat, SerializedSpriteSheet, SpritePosition};
-
 #[cfg(feature = "amethyst")]
 pub use format::named::AmethystNamedFormat;
 
