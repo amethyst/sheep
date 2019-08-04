@@ -5,6 +5,7 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 
+extern crate smallvec;
 extern crate twox_hash;
 
 mod format;
@@ -27,6 +28,7 @@ pub use format::named::AmethystNamedFormat;
 
 use sprite::{create_pixel_buffer, write_sprite};
 
+use smallvec::SmallVec;
 use std::collections::hash_map::HashMap;
 use std::hash::BuildHasherDefault;
 use twox_hash::XxHash64;
@@ -39,45 +41,27 @@ pub struct SpriteSheet {
     anchors: Vec<SpriteAnchor>,
 }
 
-#[derive(Debug, Clone)]
-enum Alias {
-    Alias(Vec<usize>),
-    NotAliased,
-    Aliased,
-}
-
 pub fn pack<P: Packer>(
     input: Vec<InputSprite>,
     stride: usize,
     options: P::Options,
 ) -> Vec<SpriteSheet> {
     let mut hashes: HashMap<&[u8], usize, BuildHasherDefault<XxHash64>> = Default::default();
-    let mut aliases: Vec<Alias> = (0..input.len()).map(|_| Alias::NotAliased).collect();
+    let mut aliases: Vec<SmallVec<[usize; 1]>> =
+        (0..input.len()).map(|_| SmallVec::new()).collect();
 
     for (id, sprite) in input.iter().enumerate() {
-        let alias = hashes.entry(sprite.bytes.as_slice()).or_insert(id);
-        // this sprite was already seen
-        if *alias != id {
-            if let Alias::Alias(ref mut aliases) = aliases[*alias] {
-                aliases.push(id);
-            } else {
-                aliases[*alias] = Alias::Alias(vec![id]);
-            }
-            aliases[id] = Alias::Aliased;
-        }
+        let alias_id = hashes.entry(sprite.bytes.as_slice()).or_insert(id);
+        aliases[*alias_id].push(id);
     }
 
     let sprites = input
         .into_iter()
         .enumerate()
-        .filter(|(idx, _)| match aliases[*idx] {
-            Alias::Aliased => false,
-            Alias::NotAliased => true,
-            Alias::Alias(_) => true,
-        })
-        .map(|(idx, sprite)| Sprite::from_input(idx, sprite))
+        .filter(|(id, _)| !aliases[*id].is_empty())
+        .map(|(id, sprite)| Sprite::from_input(id, sprite))
         .collect::<Vec<Sprite>>();
-
+        
     let sprite_data = sprites
         .iter()
         .map(|it| it.data)
@@ -98,12 +82,15 @@ pub fn pack<P: Packer>(
                     &sprites[anchor.id],
                     &anchor,
                 );
-                if let Alias::Alias(ref aliases) = aliases[anchor.id] {
-                    additional_anchors.extend(aliases.iter().map(|alias| SpriteAnchor {
-                        id: *alias,
-                        ..*anchor
-                    }));
-                }
+                additional_anchors.extend(
+                    aliases
+                        .iter()
+                        .flat_map(|aliases| aliases.iter().skip(1))
+                        .map(|alias| SpriteAnchor {
+                            id: *alias,
+                            ..*anchor
+                        }),
+                );
             }
             sheet.anchors.extend(additional_anchors);
 
