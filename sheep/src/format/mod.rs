@@ -1,6 +1,7 @@
 #[cfg(feature = "amethyst")]
 pub mod amethyst;
 
+#[cfg(feature = "amethyst")]
 pub mod named;
 
 use SpriteAnchor;
