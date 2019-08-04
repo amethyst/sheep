@@ -66,6 +66,12 @@ fn main() {
                         .takes_value(true)
                         .multiple(true)
                         .required(false),
+                )
+                .arg(
+                    Arg::with_name("pretty")
+                        .help("The resulting .ron-file is formatted")
+                        .long("pretty")
+                        .required(false),
                 ),
         );
 
@@ -132,15 +138,17 @@ fn main() {
                 )
                 .expect("Failed to create image from spritesheet");
 
+                let pretty = matches.is_present("pretty");
+
                 match matches.value_of("format") {
                     Some("amethyst_named") => {
                         let names = get_filenames(&input);
                         let meta = sheep::encode::<AmethystNamedFormat>(&sheet, names);
-                        write_files(&filename, outbuf, meta);
+                        write_files(&filename, outbuf, meta, pretty);
                     }
                     Some("amethyst") => {
                         let meta = sheep::encode::<AmethystFormat>(&sheet, ());
-                        write_files(&filename, outbuf, meta);
+                        write_files(&filename, outbuf, meta, pretty);
                     }
                     _ => panic!("Unknown format"),
                 };
@@ -189,7 +197,7 @@ fn load_images(input: &[String]) -> Vec<InputSprite> {
         .collect()
 }
 
-fn write_files<S: Serialize>(output_path: &str, outbuf: RgbaImage, meta: S) {
+fn write_files<S: Serialize>(output_path: &str, outbuf: RgbaImage, meta: S, pretty: bool) {
     outbuf
         .save(format!("{}.png", output_path))
         .expect("Failed to save image");
@@ -197,7 +205,12 @@ fn write_files<S: Serialize>(output_path: &str, outbuf: RgbaImage, meta: S) {
     let mut meta_file =
         File::create(format!("{}.ron", output_path)).expect("Failed to create meta file");
 
-    let meta_str = ron::ser::to_string(&meta).expect("Failed to encode meta file");
+    let meta_str = if pretty {
+        ron::ser::to_string_pretty(&meta, ron::ser::PrettyConfig::default())
+    } else {
+        ron::ser::to_string(&meta)
+    }
+    .expect("Failed to encode meta file");
 
     meta_file
         .write_all(meta_str.as_bytes())
