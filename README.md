@@ -1,6 +1,7 @@
 # Sheep 🐑
 
-![Crates.io](https://img.shields.io/crates/v/sheep)
+[![Build Status](https://travis-ci.org/amethyst/sheep.svg?branch=master)](https://travis-ci.org/amethyst/sheep)
+[![Crates.io](https://img.shields.io/crates/v/sheep)](https://crates.io/crates/sheep)
 
 `sheep` (Sprite**shee**t **p**acker) is a lightweight and modular library used to create spritesheets. It aims to impose as little restrictions as possible on the usage of its API so that it can be used in asset pipelines.
 
