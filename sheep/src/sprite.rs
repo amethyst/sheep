@@ -181,3 +181,92 @@ pub fn write_sprite(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn trim_fully_transparent() {
+        let dimensions = (2, 2);
+        let bytes: Vec<u8> = [
+            [255, 255, 255, 0],
+            [0, 0, 0, 0],
+            [127, 127, 127, 0],
+            [0, 128, 0, 0],
+        ]
+        .iter()
+        .flatten()
+        .cloned()
+        .collect();
+
+        let trimmed_sprite = InputSprite { dimensions, bytes }.trimmed(4, 3);
+        assert_eq!(trimmed_sprite.bytes.len(), 0);
+        assert_eq!(trimmed_sprite.dimensions, (0, 0));
+    }
+
+    #[test]
+    fn trim_fully_opaque() {
+        let dimensions = (2, 2);
+        let bytes: Vec<u8> = [
+            [255, 255, 255, 255],
+            [0, 0, 0, 255],
+            [127, 127, 127, 255],
+            [0, 128, 0, 255],
+        ]
+        .iter()
+        .flatten()
+        .cloned()
+        .collect();
+
+        let trimmed_sprite = InputSprite {
+            dimensions,
+            bytes: bytes.clone(),
+        }
+        .trimmed(4, 3);
+        assert_eq!(trimmed_sprite.bytes, bytes);
+        assert_eq!(trimmed_sprite.dimensions, dimensions);
+    }
+
+    #[test]
+    fn trim_half_transparent_different_stride() {
+        let dimensions = (4, 2);
+
+        //input  output
+        // □□■□      □■
+        // □■□□      ■□
+        let bytes: Vec<u8> = [
+            // first row
+            [255, 255, 0, 200],
+            [0, 35, 0, 0],
+            [127, 127, 255, 0],
+            [0, 128, 0, 20],
+            // second row
+            [10, 0, 0, 0],
+            [0, 35, 10, 10],
+            [20, 30, 0, 0],
+            [10, 50, 0, 15],
+        ]
+        .iter()
+        .flatten()
+        .cloned()
+        .collect();
+
+        let expected: Vec<u8> = [
+            // first row
+            [0, 35, 0, 0],
+            [127, 127, 255, 0],
+            // second row
+            [0, 35, 10, 10],
+            [20, 30, 0, 0],
+        ]
+        .iter()
+        .flatten()
+        .cloned()
+        .collect();
+
+        let trimmed_sprite = InputSprite { dimensions, bytes }.trimmed(4, 2);
+        assert_eq!(trimmed_sprite.bytes, expected);
+        assert_eq!(trimmed_sprite.dimensions, (2, 2));
+    }
+}
