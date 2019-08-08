@@ -24,6 +24,7 @@ pub use {
 
 #[cfg(feature = "amethyst")]
 pub use format::amethyst::{AmethystFormat, SerializedSpriteSheet, SpritePosition};
+#[cfg(feature = "amethyst")]
 pub use format::named::AmethystNamedFormat;
 
 use sprite::{create_pixel_buffer, write_sprite};
@@ -106,4 +107,11 @@ where
     F: Format,
 {
     F::encode(sprite_sheet.dimensions, &sprite_sheet.anchors, options)
+}
+
+pub fn trim(input: &[InputSprite], stride: usize, alpha_channel_index: usize) -> Vec<InputSprite> {
+    input
+        .iter()
+        .map(|sprite| sprite.trimmed(stride, alpha_channel_index))
+        .collect()
 }
