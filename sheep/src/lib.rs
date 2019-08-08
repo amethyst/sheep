@@ -85,3 +85,10 @@ where
 {
     F::encode(sprite_sheet.dimensions, &sprite_sheet.anchors, options)
 }
+
+pub fn trim(input: &[InputSprite], stride: usize, alpha_channel_index: usize) -> Vec<InputSprite> {
+    input
+        .iter()
+        .map(|sprite| sprite.trimmed(stride, alpha_channel_index))
+        .collect()
+}
