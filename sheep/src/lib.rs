@@ -138,4 +138,25 @@ mod tests {
         assert_eq!(sheets[0].anchors.len(), 3);
         assert_eq!(sheets[0].bytes.len(), 8);
     }
+
+    #[test]
+    fn alias_with_trimming_test() {
+        let bytes1 = vec![1, 1, 1, 1];
+        let bytes2 = vec![1, 1, 1, 1, 1, 1, 1, 0];
+        let sprite1 = InputSprite {
+            bytes: bytes1,
+            dimensions: (1, 1),
+        };
+        let sprite2 = InputSprite {
+            bytes: bytes2,
+            dimensions: (2, 1),
+        };
+
+        let input = vec![sprite2.clone(), sprite1.clone(), sprite1, sprite2];
+        let input = trim(input.as_slice(), 4, 3);
+        let sheets = pack::<SimplePacker>(input, 4, ());
+
+        assert_eq!(sheets[0].anchors.len(), 4);
+        assert_eq!(sheets[0].bytes.len(), 4);
+    }
 }
