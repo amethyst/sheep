@@ -57,12 +57,13 @@ pub fn pack<P: Packer>(
     let sprites = input
         .into_iter()
         .enumerate()
-        .filter(|(id, _)| aliases.contains_key(id))
         .map(|(id, sprite)| Sprite::from_input(id, sprite))
         .collect::<Vec<Sprite>>();
     let sprite_data = sprites
         .iter()
-        .map(|it| it.data)
+        .enumerate()
+        .filter(|(id, _)| aliases.contains_key(id))
+        .map(|(_, it)| it.data)
         .collect::<Vec<SpriteData>>();
 
     let packer_result = P::pack(&sprite_data, options);
@@ -81,13 +82,10 @@ pub fn pack<P: Packer>(
                     &anchor,
                 );
                 aliased_anchors.extend(
-                    aliases
+                    aliases[&anchor.id]
                         .iter()
-                        .flat_map(|(_, aliases)| aliases.iter().skip(1))
-                        .map(|alias| SpriteAnchor {
-                            id: *alias,
-                            ..*anchor
-                        }),
+                        .skip(1)
+                        .map(|id| SpriteAnchor { id: *id, ..*anchor }),
                 );
             }
             sheet.anchors.extend(aliased_anchors);
@@ -114,4 +112,30 @@ pub fn trim(input: &[InputSprite], stride: usize, alpha_channel_index: usize) ->
         .iter()
         .map(|sprite| sprite.trimmed(stride, alpha_channel_index))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+    #[test]
+    fn alias_test() {
+        let bytes1 = vec![0, 0, 0, 0];
+        let bytes2 = vec![1, 1, 1, 1];
+        let dimensions = (1, 1);
+        let sprite1 = InputSprite {
+            bytes: bytes1,
+            dimensions,
+        };
+        let sprite2 = InputSprite {
+            bytes: bytes2,
+            dimensions,
+        };
+
+        let input = vec![sprite1.clone(), sprite1, sprite2];
+        let sheets = pack::<SimplePacker>(input, 4, ());
+
+        assert_eq!(sheets[0].anchors.len(), 3);
+        assert_eq!(sheets[0].bytes.len(), 8);
+    }
 }
