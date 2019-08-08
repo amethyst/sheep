@@ -47,21 +47,18 @@ pub fn pack<P: Packer>(
     options: P::Options,
 ) -> Vec<SpriteSheet> {
     let mut hashes: HashMap<&[u8], usize, BuildHasherDefault<XxHash64>> = Default::default();
-    let mut aliases: Vec<SmallVec<[usize; 1]>> =
-        (0..input.len()).map(|_| SmallVec::new()).collect();
-
+    let mut aliases: HashMap<usize, SmallVec<[usize; 1]>> = HashMap::with_capacity(input.len());
     for (id, sprite) in input.iter().enumerate() {
         let alias_id = hashes.entry(sprite.bytes.as_slice()).or_insert(id);
-        aliases[*alias_id].push(id);
+        aliases.entry(*alias_id).or_default().push(id);
     }
 
     let sprites = input
         .into_iter()
         .enumerate()
-        .filter(|(id, _)| !aliases[*id].is_empty())
+        .filter(|(id, _)| aliases.contains_key(id))
         .map(|(id, sprite)| Sprite::from_input(id, sprite))
         .collect::<Vec<Sprite>>();
-        
     let sprite_data = sprites
         .iter()
         .map(|it| it.data)
@@ -73,7 +70,7 @@ pub fn pack<P: Packer>(
         .into_iter()
         .map(|mut sheet| {
             let mut buffer = create_pixel_buffer(sheet.dimensions, stride);
-            let mut additional_anchors = Vec::<SpriteAnchor>::new();
+            let mut aliased_anchors = Vec::<SpriteAnchor>::new();
             for anchor in &sheet.anchors {
                 write_sprite(
                     &mut buffer,
@@ -82,17 +79,17 @@ pub fn pack<P: Packer>(
                     &sprites[anchor.id],
                     &anchor,
                 );
-                additional_anchors.extend(
+                aliased_anchors.extend(
                     aliases
                         .iter()
-                        .flat_map(|aliases| aliases.iter().skip(1))
+                        .flat_map(|(_, aliases)| aliases.iter().skip(1))
                         .map(|alias| SpriteAnchor {
                             id: *alias,
                             ..*anchor
                         }),
                 );
             }
-            sheet.anchors.extend(additional_anchors);
+            sheet.anchors.extend(aliased_anchors);
 
             SpriteSheet {
                 bytes: buffer,
