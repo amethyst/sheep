@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct InputSprite {
     pub bytes: Vec<u8>,
     pub dimensions: (u32, u32),

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog][kc], and this project adheres to
 
 - Trimming functionality added. ([#14])
 - Pretty-print functionality for toml output added ([#18])
+- Aliasing sprite duplicates functionality added ([#22])
 
 ### Modified
 
@@ -22,6 +23,7 @@ The format is based on [Keep a Changelog][kc], and this project adheres to
 [#14]: https://github.com/amethyst/sheep/pull/14
 [#17]: https://github.com/amethyst/sheep/pull/17
 [#18]: https://github.com/amethyst/sheep/pull/18
+[#22]: https://github.com/amethyst/sheep/pull/22
 
 ## sheep 0.2.1, sheep_cli 0.2.0 - 2019-07
 
