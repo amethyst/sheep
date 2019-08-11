@@ -21,6 +21,8 @@ sheep = { path = "../sheep", version = "0.2.1" }
 image = "0.20"
 clap = "2.32"
 ron = "0.4"
+oxipng = "2.2"
+png = "0.15"
 
 [[bin]]
 name = "sheep"
