@@ -5,10 +5,10 @@ extern crate serde;
 extern crate sheep;
 
 use clap::{App, AppSettings, Arg, SubCommand};
-use image::RgbaImage;
 use serde::Serialize;
 use sheep::{
-    AmethystFormat, AmethystNamedFormat, InputSprite, MaxrectsOptions, MaxrectsPacker, SimplePacker,
+    AmethystFormat, AmethystNamedFormat, InputSprite, MaxrectsOptions, MaxrectsPacker,
+    SimplePacker, SpriteSheet,
 };
 use std::str::FromStr;
 use std::{fs::File, io::prelude::*};
@@ -79,6 +79,12 @@ fn main() {
                         .short("t")
                         .long("trim"),
                 )
+                .arg(
+                    Arg::with_name("compress")
+                        .help("Use png compression")
+                        .short("c")
+                        .long("compress"),
+                ),
         );
 
     let matches = app.get_matches();
@@ -142,12 +148,8 @@ fn main() {
                     format!("{}-{:02}", out, i)
                 };
 
-                let outbuf = RgbaImage::from_vec(
-                    sheet.dimensions.0,
-                    sheet.dimensions.1,
-                    sheet.bytes.clone(),
-                )
-                .expect("Failed to create image from spritesheet");
+                let compress = matches.is_present("compress");
+                write_image(&filename, sheet, compress);
 
                 let pretty = matches.is_present("pretty");
 
@@ -155,11 +157,11 @@ fn main() {
                     Some("amethyst_named") => {
                         let names = get_filenames(&input);
                         let meta = sheep::encode::<AmethystNamedFormat>(&sheet, names);
-                        write_files(&filename, outbuf, meta, pretty);
+                        write_meta(&filename, meta, pretty);
                     }
                     Some("amethyst") => {
                         let meta = sheep::encode::<AmethystFormat>(&sheet, ());
-                        write_files(&filename, outbuf, meta, pretty);
+                        write_meta(&filename, meta, pretty);
                     }
                     _ => panic!("Unknown format"),
                 };
@@ -208,11 +210,40 @@ fn load_images(input: &[String]) -> Vec<InputSprite> {
         .collect()
 }
 
-fn write_files<S: Serialize>(output_path: &str, outbuf: RgbaImage, meta: S, pretty: bool) {
-    outbuf
-        .save(format!("{}.png", output_path))
-        .expect("Failed to save image");
+fn write_image(output_path: &str, sheet: &SpriteSheet, compress: bool) {
+    let filename = format!("{}.png", output_path);
 
+    let mut png_bytes = Vec::<u8>::new();
+    {
+        let mut encoder = png::Encoder::new(&mut png_bytes, sheet.dimensions.0, sheet.dimensions.1);
+        encoder.set_color(png::ColorType::RGBA);
+        encoder.set_depth(png::BitDepth::Eight);
+        encoder.set_compression(png::Compression::Fast);
+        encoder.set_filter(png::FilterType::NoFilter);
+        let mut writer = encoder.write_header().expect("Failed to write png header");
+        writer
+            .write_image_data(&sheet.bytes)
+            .expect("Failed to write png data");
+    }
+    let png_bytes = if compress {
+        // you can read about presets in oxipng readme on github
+        // level 2 is sufficently fast on modern CPU's and
+        // provides 30-50% compression
+        // higher preset levels execute much (> 6x) slover and
+        // can only give about 10% additional compression
+        let options = oxipng::Options::from_preset(2);
+        oxipng::optimize_from_memory(png_bytes.as_slice(), &options)
+            .expect("Failed to compress png")
+    } else {
+        png_bytes
+    };
+
+    let mut file = File::create(filename).expect("Failed to create image file");
+    file.write_all(png_bytes.as_slice())
+        .expect("Failed to write image to file");
+}
+
+fn write_meta<S: Serialize>(output_path: &str, meta: S, pretty: bool) {
     let mut meta_file =
         File::create(format!("{}.ron", output_path)).expect("Failed to create meta file");
 
