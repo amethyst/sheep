@@ -5,7 +5,6 @@ extern crate serde;
 extern crate sheep;
 
 use clap::{App, AppSettings, Arg, SubCommand};
-use image::RgbaImage;
 use serde::Serialize;
 use sheep::{
     AmethystFormat, AmethystNamedFormat, InputSprite, MaxrectsOptions, MaxrectsPacker,
@@ -214,31 +213,34 @@ fn load_images(input: &[String]) -> Vec<InputSprite> {
 fn write_image(output_path: &str, sheet: &SpriteSheet, compress: bool) {
     let filename = format!("{}.png", output_path);
 
-    if compress {
-        let mut png_bytes = Vec::<u8>::new();
-        {
-            let mut encoder =
-                png::Encoder::new(&mut png_bytes, sheet.dimensions.0, sheet.dimensions.1);
-            encoder.set_color(png::ColorType::RGBA);
-            encoder.set_depth(png::BitDepth::Eight);
-            encoder.set_compression(png::Compression::Fast);
-            encoder.set_filter(png::FilterType::NoFilter);
-            let mut writer = encoder.write_header().unwrap();
-            writer.write_image_data(&sheet.bytes).unwrap();
-        }
-
-        let options = oxipng::Options::from_preset(3);
-        let compressed = oxipng::optimize_from_memory(png_bytes.as_slice(), &options)
-            .expect("Failed to compress png");
-        let mut file = File::create(filename).expect("Failed to create image file");
-        file.write_all(compressed.as_slice())
-            .expect("Failed to save image");
-    } else {
-        RgbaImage::from_vec(sheet.dimensions.0, sheet.dimensions.1, sheet.bytes.clone())
-            .expect("Failed to create image from spritesheet")
-            .save(filename)
-            .expect("Failed to save image.");
+    let mut png_bytes = Vec::<u8>::new();
+    {
+        let mut encoder = png::Encoder::new(&mut png_bytes, sheet.dimensions.0, sheet.dimensions.1);
+        encoder.set_color(png::ColorType::RGBA);
+        encoder.set_depth(png::BitDepth::Eight);
+        encoder.set_compression(png::Compression::Fast);
+        encoder.set_filter(png::FilterType::NoFilter);
+        let mut writer = encoder.write_header().expect("Failed to write png header");
+        writer
+            .write_image_data(&sheet.bytes)
+            .expect("Failed to write png data");
     }
+    let png_bytes = if compress {
+        // you can read about presets in oxipng readme on github
+        // level 2 is sufficently fast on modern CPU's and
+        // provides 30-50% compression
+        // higher preset levels execute much (> 6x) slover and
+        // can only give about 10% additional compression
+        let options = oxipng::Options::from_preset(2);
+        oxipng::optimize_from_memory(png_bytes.as_slice(), &options)
+            .expect("Failed to compress png")
+    } else {
+        png_bytes
+    };
+
+    let mut file = File::create(filename).expect("Failed to create image file");
+    file.write_all(png_bytes.as_slice())
+        .expect("Failed to write image to file");
 }
 
 fn write_meta<S: Serialize>(output_path: &str, meta: S, pretty: bool) {
