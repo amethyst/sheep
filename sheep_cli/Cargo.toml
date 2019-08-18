@@ -1,6 +1,6 @@
 [package]
 name = "sheep_cli"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Hilmar Wiegand <me@hwgnd.de>"]
 description = "Modular and lightweight spritesheet packer"
 keywords = ["sdk", "amethyst", "sprites", "packing", "cli"]
@@ -17,7 +17,7 @@ travis-ci = { repository = "amethyst/sheep", branch = "master" }
 
 [dependencies]
 serde = "1.0.89"
-sheep = { path = "../sheep", version = "0.2.1" }
+sheep = { path = "../sheep", version = "0.3.0" }
 image = "0.20"
 clap = "2.32"
 ron = "0.4"
