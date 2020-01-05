@@ -1,10 +1,12 @@
 extern crate clap;
+extern crate glob;
 extern crate image;
 extern crate ron;
 extern crate serde;
 extern crate sheep;
 
 use clap::{App, AppSettings, Arg, SubCommand};
+use glob::glob;
 use serde::Serialize;
 use sheep::{
     AmethystFormat, AmethystNamedFormat, InputSprite, MaxrectsOptions, MaxrectsPacker,
@@ -91,10 +93,23 @@ fn main() {
 
     match matches.subcommand() {
         ("pack", Some(matches)) => {
-            let input = matches
-                .values_of("INPUT")
-                .map(|values| values.map(|it| String::from(it)).collect::<Vec<String>>())
-                .unwrap_or(Vec::new());
+            let input = if cfg!(windows) {
+                matches
+                    .values_of("INPUT")
+                    .unwrap()
+                    .flat_map(|pattern| {
+                        glob(pattern)
+                            .unwrap()
+                            .filter_map(Result::ok)
+                            .map(|path| String::from(path.to_str().unwrap()))
+                    })
+                    .collect::<Vec<String>>()
+            } else {
+                matches
+                    .values_of("INPUT")
+                    .map(|values| values.map(|it| String::from(it)).collect::<Vec<String>>())
+                    .unwrap_or(Vec::new())
+            };
 
             let out = matches
                 .value_of("output")
