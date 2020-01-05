@@ -21,7 +21,7 @@ By default, the `maxrects` packer will be used, see [packers](#Packers) for more
 **Example:**
 
 ```
-sheep pack --options max_width=1024 max_height=1024 sprites/*.png
+sheep pack sprites/*.png --options max_width=1024 max_height=1024
 ```
 
 If you want to use the CLI from source, simple clone the repo and run `cargo run -- ...`. For an example on how to use the library directly, please see the `simple_pack` example in the `sheep/examples` directory.
