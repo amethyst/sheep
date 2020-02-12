@@ -57,7 +57,7 @@ pub struct MyFormat;
 #[derive(Serialize)]
 pub struct Foo {}
 
-impl Format for AmethystFormat {
+impl Format for MyFormat {
     type Data = Foo;
 
     fn encode(dimensions: (u32, u32), sprites: &[SpriteAnchor]) -> Self::Data {
