@@ -19,8 +19,13 @@ pub struct SerializedSpriteSheet {
     pub sprites: Vec<SpritePosition>,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub enum Wrapper<T> {
+    List(T),
+}
+
 impl Format for AmethystFormat {
-    type Data = SerializedSpriteSheet;
+    type Data = Wrapper<SerializedSpriteSheet>;
     type Options = ();
 
     fn encode(
@@ -39,10 +44,10 @@ impl Format for AmethystFormat {
             })
             .collect::<Vec<SpritePosition>>();
 
-        SerializedSpriteSheet {
+        Wrapper::List(SerializedSpriteSheet {
             texture_width: dimensions.0 as f32,
             texture_height: dimensions.1 as f32,
             sprites: sprite_positions,
-        }
+        })
     }
 }

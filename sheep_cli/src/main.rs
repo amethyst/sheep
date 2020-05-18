@@ -1,15 +1,18 @@
 extern crate clap;
+extern crate glob;
 extern crate image;
 extern crate ron;
 extern crate serde;
 extern crate sheep;
 
 use clap::{App, AppSettings, Arg, SubCommand};
+use glob::glob;
 use serde::Serialize;
 use sheep::{
     AmethystFormat, AmethystNamedFormat, InputSprite, MaxrectsOptions, MaxrectsPacker,
     SimplePacker, SpriteSheet,
 };
+use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use std::{fs::File, io::prelude::*};
 
@@ -93,7 +96,16 @@ fn main() {
         ("pack", Some(matches)) => {
             let input = matches
                 .values_of("INPUT")
-                .map(|values| values.map(|it| String::from(it)).collect::<Vec<String>>())
+                .map(|values| {
+                    values
+                        .flat_map(|path_pattern| {
+                            glob(path_pattern)
+                                .expect("Invalid path pattern")
+                                .map(|path| path.expect("Invalid path"))
+                                .collect::<Vec<PathBuf>>()
+                        })
+                        .collect::<Vec<PathBuf>>()
+                })
                 .unwrap_or(Vec::new());
 
             let out = matches
@@ -171,12 +183,11 @@ fn main() {
     }
 }
 
-fn get_filenames(input: &[String]) -> Vec<String> {
+fn get_filenames(input: &[PathBuf]) -> Vec<String> {
     input
         .iter()
         .map(|path| {
-            std::path::PathBuf::from(&path)
-                .file_stem()
+            path.file_stem()
                 .and_then(|name| name.to_str())
                 .map(|name| String::from_str(name).expect("could not parse string from file name"))
                 .expect("Failed to extract file name")
@@ -184,7 +195,10 @@ fn get_filenames(input: &[String]) -> Vec<String> {
         .collect()
 }
 
-fn load_images(input: &[String]) -> Vec<InputSprite> {
+fn load_images<T>(input: &[T]) -> Vec<InputSprite>
+where
+    T: AsRef<Path>,
+{
     input
         .iter()
         .map(|path| {
