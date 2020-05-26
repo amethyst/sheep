@@ -57,7 +57,7 @@ pub struct MyFormat;
 #[derive(Serialize)]
 pub struct Foo {}
 
-impl Format for AmethystFOrmat {
+impl Format for MyFormat {
     type Data = Foo;
 
     fn encode(dimensions: (u32, u32), sprites: &[SpriteAnchor]) -> Self::Data {
@@ -82,12 +82,10 @@ let meta = sheep::encode::<MyFormat>(&sprite_sheet);
 
 Right now, there are two implementations to choose from:
 
-- MAXRECTS (**recommended**)
-
+- MAXRECTS (**recommended**)  
 Implementation of the maxrects sprite packing algorithm. The paper and original implementation used as a reference for this can be found [here](https://github.com/juj/RectangleBinPack). This algorithm should yield optimal results in most scenarios.
 
-- simple
-
+- simple  
 A naive implementation that will sort the sprites by area and then pack them all into a single texture. This won't scale very well since you can't limit the maximum size of the resulting sprite sheet, but can be quicker than maxrects in simple scenarios.
 
 ## Roadmap
