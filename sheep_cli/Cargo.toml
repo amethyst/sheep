@@ -23,6 +23,7 @@ clap = "2.32"
 ron = "0.4"
 oxipng = "2.2"
 png = "0.15"
+glob = "0.3.0"
 
 [[bin]]
 name = "sheep"
